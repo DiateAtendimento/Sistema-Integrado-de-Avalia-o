@@ -1,0 +1,216 @@
+function getAdminHeaders() {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function redirectToLogin() {
+  clearAuthToken();
+  window.location.href = 'admin-login.html';
+}
+
+async function requireAuth() {
+  const token = getAuthToken();
+  if (!token) {
+    redirectToLogin();
+    return false;
+  }
+  return true;
+}
+
+async function handleLogin() {
+  const form = document.getElementById('login-form');
+  const message = document.getElementById('login-message');
+  if (!form) return;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    message.innerHTML = '';
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    try {
+      const result = await apiPost('/api/admin/login', { username, password });
+      setAuthToken(result.token);
+      window.location.href = 'admin-dashboard.html';
+    } catch (error) {
+      showMessage(message, error.message || 'Credenciais inválidas.', 'danger');
+    }
+  });
+}
+
+async function loadDashboard() {
+  if (!(await requireAuth())) return;
+  const cardsContainer = document.getElementById('dashboard-cards');
+  const topEntidadesList = document.getElementById('top-entidades');
+  const snapshot = document.getElementById('consolidado-snapshot');
+
+  try {
+    const data = await apiGet('/api/admin/dashboard', getAdminHeaders());
+    cardsContainer.innerHTML = '';
+    const metrics = [
+      { title: 'Avaliações totais', value: data.totalAvaliacoes },
+      { title: 'Exames cadastrados', value: data.exameCount },
+      { title: 'CCP/CAP cadastrados', value: data.ccpCount },
+      { title: 'Respostas críticas', value: data.criticaCount }
+    ];
+    metrics.forEach((metric) => {
+      const card = document.createElement('div');
+      card.className = 'col-md-3';
+      card.innerHTML = `<div class="card shadow-sm border-0 h-100"><div class="card-body"><h6 class="text-muted">${metric.title}</h6><h3 class="mt-3">${metric.value}</h3></div></div>`;
+      cardsContainer.appendChild(card);
+    });
+
+    topEntidadesList.innerHTML = data.topEntidades.length
+      ? data.topEntidades.map((item) => `<li class="list-group-item d-flex justify-content-between align-items-center">${item.entidade}<span class="badge bg-primary rounded-pill">${item.total}</span></li>`).join('')
+      : '<li class="list-group-item text-muted">Nenhuma entidade registrada ainda.</li>';
+
+    const consolidado = [];
+    if (Array.isArray(data.consolidadoExame) && data.consolidadoExame.length) {
+      consolidado.push('Exame: ' + data.consolidadoExame.length + ' linhas');
+    }
+    if (Array.isArray(data.consolidadoCcp) && data.consolidadoCcp.length) {
+      consolidado.push('CCP/CAP: ' + data.consolidadoCcp.length + ' linhas');
+    }
+    snapshot.textContent = consolidado.length ? consolidado.join('\n') : 'Sem dados consolidados disponíveis.';
+  } catch (error) {
+    redirectToLogin();
+  }
+}
+
+function createDetailCard(item) {
+  return Object.entries(item)
+    .map(([key, value]) => `<dt class="col-sm-4">${key}</dt><dd class="col-sm-8">${value || '-'}</dd>`)
+    .join('');
+}
+
+async function loadRespostas() {
+  if (!(await requireAuth())) return;
+  const tableExame = document.getElementById('table-exame');
+  const tableCcp = document.getElementById('table-ccp');
+
+  try {
+    const data = await apiGet('/api/admin/respostas', getAdminHeaders());
+    const exameColumns = [
+      { label: 'ID', key: 'ID_Avaliacao' },
+      { label: 'Entidade', key: 'Entidade_Certificadora' },
+      { label: 'Certificação', key: 'Tipo_Certificacao' },
+      { label: 'Data', key: 'Data_Recebimento' },
+      { label: 'Média', key: 'Media_Geral_Exame' },
+      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')">Ver</button>` }
+    ];
+    const ccpColumns = [
+      { label: 'ID', key: 'ID_Avaliacao' },
+      { label: 'Entidade', key: 'Entidade_Certificadora' },
+      { label: 'Modalidade', key: 'Modalidade_CCP_CAP' },
+      { label: 'Data', key: 'Data_Recebimento' },
+      { label: 'Nota Global', key: 'Nota_Global_Ponderada' },
+      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')">Ver</button>` }
+    ];
+
+    createTable(tableExame, data.exame, exameColumns);
+    createTable(tableCcp, data.ccp, ccpColumns);
+  } catch (error) {
+    redirectToLogin();
+  }
+}
+
+async function showRespostaDetalhe(id) {
+  if (!(await requireAuth())) return;
+  try {
+    const result = await apiGet(`/api/admin/respostas/${id}`, getAdminHeaders());
+    const detailArea = document.getElementById('resposta-detalhe');
+    if (!detailArea) {
+      const container = document.createElement('div');
+      container.id = 'resposta-detalhe';
+      container.className = 'mt-4 card shadow-sm border-0';
+      document.querySelector('main .container')?.appendChild(container);
+      container.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
+    } else {
+      detailArea.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
+    }
+  } catch (error) {
+    alert(error.message || 'Não foi possível carregar o detalhe da resposta.');
+  }
+}
+
+async function loadAlertas() {
+  if (!(await requireAuth())) return;
+  const container = document.getElementById('alertas-list');
+  try {
+    const data = await apiGet('/api/admin/alertas', getAdminHeaders());
+    container.innerHTML = '';
+    const buildCard = (title, rows) => {
+      const card = document.createElement('div');
+      card.className = 'col-lg-6';
+      card.innerHTML = `
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <h5 class="card-title">${title}</h5>
+            ${rows.length ? '<ul class="list-group list-group-flush">' + rows.slice(0, 5).map((item) => `<li class="list-group-item"><strong>${item.ID_Avaliacao || '-'}:</strong> ${item.Entidade_Certificadora || item.Modalidade_CCP_CAP || '-'} <span class="badge bg-danger ms-2">Crítico</span></li>`).join('') + '</ul>' : '<p class="text-muted">Sem alertas nesta categoria.</p>'}
+          </div>
+        </div>`;
+      return card;
+    };
+    container.appendChild(buildCard('Exames críticos', data.exameCriticas || []));
+    container.appendChild(buildCard('CCP/CAP críticos', data.ccpCriticas || []));
+    container.appendChild(buildCard('Comentários críticos', data.comentarioCritico || []));
+  } catch (error) {
+    redirectToLogin();
+  }
+}
+
+async function loadRelatorios() {
+  if (!(await requireAuth())) return;
+  const container = document.getElementById('report-summaries');
+  try {
+    const data = await apiGet('/api/admin/relatorios', getAdminHeaders());
+    container.innerHTML = '';
+    const sections = [
+      { title: 'Monitoramento Exame', rows: data.monitoramentoExame },
+      { title: 'Monitoramento CCP/CAP', rows: data.monitoramentoCcp }
+    ];
+    sections.forEach((section) => {
+      const card = document.createElement('div');
+      card.className = 'col-lg-6';
+      card.innerHTML = `
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <h5 class="card-title">${section.title}</h5>
+            <p class="text-muted">${section.rows.length} linhas carregadas.</p>
+          </div>
+        </div>`;
+      container.appendChild(card);
+    });
+  } catch (error) {
+    redirectToLogin();
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const logoutButton = document.getElementById('logout-button');
+  if (logoutButton) {
+    logoutButton.addEventListener('click', redirectToLogin);
+  }
+
+  if (document.getElementById('login-form')) {
+    handleLogin();
+    return;
+  }
+
+  if (!getAuthToken()) {
+    redirectToLogin();
+    return;
+  }
+
+  if (document.getElementById('dashboard-cards')) {
+    loadDashboard();
+  }
+  if (document.getElementById('table-exame')) {
+    loadRespostas();
+  }
+  if (document.getElementById('alertas-list')) {
+    loadAlertas();
+  }
+  if (document.getElementById('report-summaries')) {
+    loadRelatorios();
+  }
+});

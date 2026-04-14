@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIA Admin - Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-BTv7sNbabCxRr3G6kEQ2f3KWbNjC+M+U3E6N4i32Y9V6JpX1h2BsmX9WgAFEO0zB" crossorigin="anonymous" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">SIA Admin</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin-respostas.html">Respostas</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin-alertas.html">Alertas</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin-relatorios.html">Relatórios</a></li>
+          <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-3">Sair</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="row g-4" id="dashboard-cards"></div>
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="card-title">Entidades com mais avaliações</h5>
+            <ul id="top-entidades" class="list-group list-group-flush"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="card-title">Resumo de consolidados</h5>
+            <pre id="consolidado-snapshot" class="small text-muted"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-4 bg-white text-center border-top">
+    <div class="container text-muted">© 2026 SIA - Sistema Integrado de Avaliação</div>
+  </footer>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>
