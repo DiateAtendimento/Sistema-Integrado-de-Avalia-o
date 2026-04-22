@@ -1,4 +1,4 @@
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = window.API_BASE_URL || 'https://sistema-integrado-de-avalia-o.onrender.com';
 
 async function apiGet(path, extraHeaders = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
