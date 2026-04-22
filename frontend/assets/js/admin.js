@@ -54,8 +54,8 @@ async function loadDashboard() {
     ];
     metrics.forEach((metric) => {
       const card = document.createElement('div');
-      card.className = 'col-md-3';
-      card.innerHTML = `<div class="card shadow-sm border-0 h-100"><div class="card-body"><h6 class="text-muted">${metric.title}</h6><h3 class="mt-3">${metric.value}</h3></div></div>`;
+      card.className = 'col-md-6 col-xl-3';
+      card.innerHTML = `<div class="card metric-card"><div class="card-body"><h6 class="text-muted">${metric.title}</h6><h3 class="mt-3 mb-0">${metric.value}</h3></div></div>`;
       cardsContainer.appendChild(card);
     });
 
@@ -95,7 +95,7 @@ async function loadRespostas() {
       { label: 'Certificação', key: 'Tipo_Certificacao' },
       { label: 'Data', key: 'Data_Recebimento' },
       { label: 'Média', key: 'Media_Geral_Exame' },
-      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')">Ver</button>` }
+      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')"><i class="bi bi-eye"></i>Ver</button>` }
     ];
     const ccpColumns = [
       { label: 'ID', key: 'ID_Avaliacao' },
@@ -103,7 +103,7 @@ async function loadRespostas() {
       { label: 'Modalidade', key: 'Modalidade_CCP_CAP' },
       { label: 'Data', key: 'Data_Recebimento' },
       { label: 'Nota Global', key: 'Nota_Global_Ponderada' },
-      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')">Ver</button>` }
+      { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')"><i class="bi bi-eye"></i>Ver</button>` }
     ];
 
     createTable(tableExame, data.exame, exameColumns);
@@ -121,7 +121,7 @@ async function showRespostaDetalhe(id) {
     if (!detailArea) {
       const container = document.createElement('div');
       container.id = 'resposta-detalhe';
-      container.className = 'mt-4 card shadow-sm border-0';
+      container.className = 'mt-4 card detail-card';
       document.querySelector('main .container')?.appendChild(container);
       container.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
     } else {
@@ -142,7 +142,7 @@ async function loadAlertas() {
       const card = document.createElement('div');
       card.className = 'col-lg-6';
       card.innerHTML = `
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card h-100">
           <div class="card-body">
             <h5 class="card-title">${title}</h5>
             ${rows.length ? '<ul class="list-group list-group-flush">' + rows.slice(0, 5).map((item) => `<li class="list-group-item"><strong>${item.ID_Avaliacao || '-'}:</strong> ${item.Entidade_Certificadora || item.Modalidade_CCP_CAP || '-'} <span class="badge bg-danger ms-2">Crítico</span></li>`).join('') + '</ul>' : '<p class="text-muted">Sem alertas nesta categoria.</p>'}
@@ -172,7 +172,7 @@ async function loadRelatorios() {
       const card = document.createElement('div');
       card.className = 'col-lg-6';
       card.innerHTML = `
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card h-100">
           <div class="card-body">
             <h5 class="card-title">${section.title}</h5>
             <p class="text-muted">${section.rows.length} linhas carregadas.</p>

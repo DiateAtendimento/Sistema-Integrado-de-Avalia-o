@@ -4,39 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SIA Admin - Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-BTv7sNbabCxRr3G6kEQ2f3KWbNjC+M+U3E6N4i32Y9V6JpX1h2BsmX9WgAFEO0zB" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body class="bg-light">
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <nav class="navbar navbar-dark admin-nav">
     <div class="container">
-      <a class="navbar-brand" href="#">SIA Admin</a>
-      <div class="collapse navbar-collapse">
+      <a class="navbar-brand" href="admin-dashboard.html"><i class="bi bi-clipboard2-data"></i>SIA Admin</a>
+      <div class="navbar-collapse">
         <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="admin-dashboard.html">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="admin-respostas.html">Respostas</a></li>
           <li class="nav-item"><a class="nav-link" href="admin-alertas.html">Alertas</a></li>
           <li class="nav-item"><a class="nav-link" href="admin-relatorios.html">Relatórios</a></li>
-          <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-3">Sair</button></li>
+          <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-box-arrow-right"></i>Sair</button></li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <main class="container py-5">
+  <main class="container page-shell">
+    <section class="page-title">
+      <h1 class="h3">Dashboard</h1>
+      <p class="text-muted mb-0">Visão consolidada das avaliações recebidas, entidades mais recorrentes e dados de monitoramento.</p>
+    </section>
+
     <div class="row g-4" id="dashboard-cards"></div>
-    <div class="row g-4 mt-4">
+    <div class="row g-4 mt-2">
       <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
+        <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Entidades com mais avaliações</h5>
+            <h2 class="card-title h5">Entidades com mais avaliações</h2>
             <ul id="top-entidades" class="list-group list-group-flush"></ul>
           </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
+        <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">Resumo de consolidados</h5>
+            <h2 class="card-title h5">Resumo de consolidados</h2>
             <pre id="consolidado-snapshot" class="small text-muted"></pre>
           </div>
         </div>
@@ -44,7 +51,7 @@
     </div>
   </main>
 
-  <footer class="py-4 bg-white text-center border-top">
+  <footer class="footer py-4 text-center">
     <div class="container text-muted">© 2026 SIA - Sistema Integrado de Avaliação</div>
   </footer>
 

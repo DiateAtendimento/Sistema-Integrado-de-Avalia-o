@@ -265,7 +265,7 @@ async function setupForm(formulario) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const formulario = document.body.datasetFormulario;
+  const formulario = document.body.dataset.formulario;
   if (formulario) {
     setupForm(formulario);
   }
