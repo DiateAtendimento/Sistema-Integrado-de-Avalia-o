@@ -100,7 +100,10 @@ function createBlockStep(blockKey, blockName, questions, cadastroOptions) {
   const container = step.querySelector('.card-body');
   questions.forEach((question) => {
     const inputWrapper = createControlField(question, cadastroOptions[question.Codigo_Pergunta]);
-    if (question.Acao_Condicional && question.Acao_Condicional.toLowerCase().includes('justificativa')) {
+    const isJustificationField =
+      (question.Codigo_Pergunta || '').toLowerCase().includes('justificativa') ||
+      (question.Tipo_Campo || '').toLowerCase().includes('texto');
+    if (isJustificationField && question.Acao_Condicional && question.Acao_Condicional.toLowerCase().includes('justificativa')) {
       inputWrapper.classList.add('conditional-field');
       inputWrapper.dataset.conditional = blockKey;
       inputWrapper.style.display = 'none';
