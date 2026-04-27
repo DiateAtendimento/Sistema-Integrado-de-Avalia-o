@@ -180,6 +180,17 @@ async function setupForm(formulario) {
 
     const cadastroOptions = buildCadastroOptions(cadastros);
     const questions = definition.perguntas || [];
+    if (!questions.length) {
+      showMessage(
+        messageContainer,
+        'Nenhuma pergunta foi encontrada para este formulário. Verifique o cadastro em DICIONARIO_PERGUNTAS.',
+        'warning'
+      );
+      nextButton.disabled = true;
+      prevButton.disabled = true;
+      submitButton.disabled = true;
+      return;
+    }
     const grouped = groupBy(questions, 'Bloco_Eixo');
     const stepKeys = Object.keys(grouped);
 

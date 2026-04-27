@@ -70,9 +70,37 @@ async function appendRow(sheetName, values) {
   return response.data;
 }
 
+function normalizeFormKey(value) {
+  return (value || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\/_\s]+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function getFormularioAliases(formulario) {
+  const normalized = normalizeFormKey(formulario);
+  const aliasMap = {
+    'exame-provas': ['exame-provas', 'exame-por-provas', 'exameprovas', 'exame'],
+    'ccp-cap': ['ccp-cap', 'ccpcap', 'ccp/cap', 'ccp-capacitacao', 'cap-ccp']
+  };
+
+  const matchedEntry = Object.entries(aliasMap).find(([, aliases]) => aliases.includes(normalized));
+  if (!matchedEntry) {
+    return [normalized];
+  }
+
+  const [canonical, aliases] = matchedEntry;
+  return [canonical, ...aliases];
+}
+
 async function getPerguntas(formulario) {
   const rows = await getSheetObjects('DICIONARIO_PERGUNTAS');
-  return rows.filter((item) => item.Formulario && item.Formulario.toString().toLowerCase() === formulario.toLowerCase());
+  const aliases = getFormularioAliases(formulario);
+  return rows.filter((item) => aliases.includes(normalizeFormKey(item.Formulario)));
 }
 
 async function getCadastros() {
