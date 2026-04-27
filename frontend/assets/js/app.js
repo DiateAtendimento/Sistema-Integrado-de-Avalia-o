@@ -1,7 +1,11 @@
 function parseOptions(rows) {
   if (!Array.isArray(rows)) return [];
   return rows
-    .map((item) => Object.values(item).find((value) => value && value.toString().trim()))
+    .filter((item) => {
+      const ativo = item.ativo || item.Ativo;
+      return !ativo || ativo.toString().trim().toUpperCase() === 'SIM';
+    })
+    .map((item) => item.nome || item.Nome || Object.values(item).find((value) => value && value.toString().trim()))
     .filter((value, index, self) => value && self.indexOf(value) === index)
     .sort((a, b) => a.toString().localeCompare(b.toString(), 'pt-BR'));
 }
