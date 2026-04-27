@@ -27,7 +27,7 @@ function createControlField(question, cadastroOptions) {
     select.className = 'form-select';
     select.id = fieldName;
     select.name = fieldName;
-    if (!required) select.innerHTML = '<option value="">Selecione</option>';
+    select.innerHTML = '<option value="">Selecione</option>';
     for (let i = 1; i <= 5; i += 1) {
       const option = document.createElement('option');
       option.value = i;
@@ -165,7 +165,20 @@ function toggleConditionalFields(step, blockKey) {
     const inner = field.querySelector('textarea, input');
     if (inner) {
       inner.required = shouldShow;
-      if (!shouldShow) inner.value = '';
+      if (!shouldShow) {
+        inner.value = '';
+      }
+    }
+  });
+}
+
+function resetConditionalFields(stepsContainer) {
+  stepsContainer.querySelectorAll('.conditional-field').forEach((field) => {
+    field.style.display = 'none';
+    const inner = field.querySelector('textarea, input');
+    if (inner) {
+      inner.required = false;
+      inner.value = '';
     }
   });
 }
@@ -209,6 +222,7 @@ async function setupForm(formulario) {
       const stepElement = createBlockStep(stepKey, blockName, grouped[stepKey], cadastroOptions);
       stepsContainer.appendChild(stepElement);
     });
+    resetConditionalFields(stepsContainer);
 
     let currentStep = 0;
     const stepElements = Array.from(stepsContainer.querySelectorAll('.form-step'));
@@ -305,6 +319,7 @@ async function setupForm(formulario) {
         const result = await apiPost(endpoint, payload);
         showMessage(messageContainer, result.message || 'Avaliação enviada com sucesso.', 'success');
         form.reset();
+        resetConditionalFields(stepsContainer);
         currentStep = 0;
         syncConditionalSteps();
         showStep(currentStep);
