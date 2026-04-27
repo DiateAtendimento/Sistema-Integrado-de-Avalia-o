@@ -1,0 +1,103 @@
+Formulario;Grupo;Bloco_Eixo;Nome_Bloco_Eixo;Codigo_Pergunta;Tipo_Campo;Obrigatoria;Acao_Condicional;Observacao
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Identificacao_Respondente;Texto curto;NAO;;Identificacao (opcional)
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Entidade_Certificadora;Select;SIM;;Entidade certificadora
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Tipo_Certificacao;Select;SIM;;Tipo de Certificacao realizada
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Nivel_Certificacao;Select;SIM;;Nivel da Certificacao
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Modalidade_Prova;Select;SIM;;Realizacao da prova
+Exame por Provas;Exame;Bloco 0;Identificacao da avaliacao;Data_Exame;Texto curto;SIM;;Data de realizacao do exame
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;B1_1.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O ambiente de realizacao da prova apresentou condicoes adequadas.
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;B1_1.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O sistema utilizado para aplicacao da prova funcionou adequadamente.
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;B1_1.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao houve falhas tecnicas relevantes durante o exame.
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;B1_1.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O tempo de prova foi corretamente informado e controlado.
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;B1_1.5;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As orientacoes iniciais foram claras e suficientes.
+Exame por Provas;Exame;Bloco 1;Organizacao e infraestrutura;Justificativa_Bloco1;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 2;Conduta e imparcialidade;B2_2.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Os aplicadores/fiscais demonstraram postura etica e imparcial.
+Exame por Provas;Exame;Bloco 2;Conduta e imparcialidade;B2_2.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao houve tratamento diferenciado entre candidatos.
+Exame por Provas;Exame;Bloco 2;Conduta e imparcialidade;B2_2.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As regras foram aplicadas de forma uniforme.
+Exame por Provas;Exame;Bloco 2;Conduta e imparcialidade;B2_2.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O sigilo das informacoes foi preservado.
+Exame por Provas;Exame;Bloco 2;Conduta e imparcialidade;Justificativa_Bloco2;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;B3_3.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O conteudo da prova estava compativel com o edital.
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;B3_3.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As questoes estavam redigidas com clareza, sem erros materiais evidentes.
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;B3_3.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O nivel de dificuldade foi compativel com a certificacao pretendida.
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;B3_3.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O exame avaliou os conhecimentos e habilidades esperadas para a certificacao.
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;B3_3.5;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O tempo disponivel para realizacao do exame foi suficiente.
+Exame por Provas;Exame;Bloco 3;Conteudo e adequacao;Justificativa_Bloco3;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 4;Integridade do processo;B4_4.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O modelo de aplicacao adotado garantiu igualdade de condicoes entre os candidatos.
+Exame por Provas;Exame;Bloco 4;Integridade do processo;B4_4.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Houve fiscalizacao adequada durante todo o exame.
+Exame por Provas;Exame;Bloco 4;Integridade do processo;B4_4.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O processo adotado dificultou praticas indevidas.
+Exame por Provas;Exame;Bloco 4;Integridade do processo;B4_4.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Confio na credibilidade do processo de certificacao realizado.
+Exame por Provas;Exame;Bloco 4;Integridade do processo;Justificativa_Bloco4;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.1;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Minha identidade foi verificada de forma rigorosa antes do inicio da prova.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.2;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Foi exigida apresentacao de documento oficial com foto.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.3;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Houve registro de imagem (foto ou video) para confirmacao de identidade.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.4;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Permaneci com camera ativa durante toda a realizacao da prova.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.5;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Fui informado previamente sobre a gravacao de video e/ou audio.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.6;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);O sistema monitorou minha atividade na tela durante o exame.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.7;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);O sistema emitiu alertas ou bloqueios em caso de troca de tela ou janela.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.8;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Houve fiscalizacao efetiva durante todo o periodo da prova.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.9;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Foi exigida visualizacao previa do ambiente antes do inicio da prova.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.10;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);Nao foi permitido o uso de dispositivos paralelos nao autorizados.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;B5_5.11;Nota 1-5;SIM;Exibir apenas se Modalidade_Prova = Online (remota);As regras sobre conduta e uso de materiais foram claras na modalidade online.
+Exame por Provas;Exame;Bloco 5;Bloco especifico - provas online;Justificativa_Bloco5;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 6;Avaliacao geral do exame;B6_6.1.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Considero que o exame foi conduzido de forma tecnica e profissional.
+Exame por Provas;Exame;Bloco 6;Avaliacao geral do exame;B6_6.1.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;A entidade demonstrou capacidade tecnica para aplicacao do exame.
+Exame por Provas;Exame;Bloco 6;Avaliacao geral do exame;B6_6.1.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Recomendaria esta entidade certificadora.
+Exame por Provas;Exame;Bloco 6;Avaliacao geral do exame;Justificativa_Bloco6;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+Exame por Provas;Exame;Bloco 6;Avaliacao geral do exame;Avaliacao_Geral_Texto;Texto longo;SIM;;Considerando os blocos anteriores, forneca uma avaliacao geral do exame.
+Exame por Provas;Exame;Bloco 7;Observacoes finais;Observacoes_Finais;Texto longo;NAO;;Item nao obrigatorio. Caso deseje, este e um espaco livre para sua manifestacao sobre o exame ou para sugestoes de melhoria da qualidade do exame.
+CCP/CAP;CCP/CAP;Bloco 0;Identificacao da avaliacao;Identificacao_Respondente;Texto curto;NAO;;Identificacao (opcional)
+CCP/CAP;CCP/CAP;Bloco 0;Identificacao da avaliacao;Entidade_Certificadora;Select;SIM;;Entidade certificadora
+CCP/CAP;CCP/CAP;Bloco 0;Identificacao da avaliacao;Modalidade_CCP_CAP;Select;SIM;;Modalidade de Certificacao
+CCP/CAP;CCP/CAP;Bloco 0;Identificacao da avaliacao;Tipo_Certificacao;Select;SIM;;Tipo de Certificacao
+CCP/CAP;CCP/CAP;Bloco 0;Identificacao da avaliacao;Data_Curso;Texto curto;SIM;;Data de realizacao do curso
+CCP/CAP;Eixo 1;Bloco 1;Transparencia e regras do processo;E1_1.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As regras da Certificacao foram divulgadas previamente de forma clara.
+CCP/CAP;Eixo 1;Bloco 1;Transparencia e regras do processo;E1_1.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao houve alteracoes inesperadas nas regras apos o inicio do curso.
+CCP/CAP;Eixo 1;Bloco 1;Transparencia e regras do processo;E1_1.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As condicoes para emissao do certificado estiveram vinculadas ao cumprimento das regras estabelecidas.
+CCP/CAP;Eixo 1;Bloco 1;Transparencia e regras do processo;Justificativa_E1_Bloco1;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 2;Controle de participacao e frequencia;E1_2.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O sistema exigiu participacao efetiva nas aulas.
+CCP/CAP;Eixo 1;Bloco 2;Controle de participacao e frequencia;E1_2.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao foi possivel concluir o curso sem o cumprimento das exigencias minimas.
+CCP/CAP;Eixo 1;Bloco 2;Controle de participacao e frequencia;E1_2.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Foram aplicadas avaliacoes ao longo do curso para aferir a aprendizagem de forma progressiva.
+CCP/CAP;Eixo 1;Bloco 2;Controle de participacao e frequencia;Justificativa_E1_Bloco2;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 3;Avaliacoes de aprendizagem;E1_3.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Houve alteracoes das questoes entre as turmas ou entre as tentativas realizadas.
+CCP/CAP;Eixo 1;Bloco 3;Avaliacoes de aprendizagem;E1_3.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;As questoes foram distribuidas de forma coerente nos respectivos modulos.
+CCP/CAP;Eixo 1;Bloco 3;Avaliacoes de aprendizagem;E1_3.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao foi possivel repetir indefinidamente a mesma questao.
+CCP/CAP;Eixo 1;Bloco 3;Avaliacoes de aprendizagem;Justificativa_E1_Bloco3;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 4;Integridade e autenticidade das avaliacoes;E1_4.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Houve verificacao de identidade do participante.
+CCP/CAP;Eixo 1;Bloco 4;Integridade e autenticidade das avaliacoes;E1_4.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O ambiente impos restricoes tecnicas adequadas.
+CCP/CAP;Eixo 1;Bloco 4;Integridade e autenticidade das avaliacoes;E1_4.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao foram observadas fragilidades que permitissem a realizacao da prova por terceiros.
+CCP/CAP;Eixo 1;Bloco 4;Integridade e autenticidade das avaliacoes;Justificativa_E1_Bloco4;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 5;Conformidade do conteudo programatico;E1_5.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O conteudo do curso correspondeu ao programa previamente divulgado.
+CCP/CAP;Eixo 1;Bloco 5;Conformidade do conteudo programatico;E1_5.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao foram observadas questoes desatualizadas ou incompativeis com a legislacao vigente.
+CCP/CAP;Eixo 1;Bloco 5;Conformidade do conteudo programatico;E1_5.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O nivel de exigencia foi compativel com a certificacao realizada.
+CCP/CAP;Eixo 1;Bloco 5;Conformidade do conteudo programatico;E1_5.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;A duracao dos modulos e do curso foi adequada ao conteudo programatico.
+CCP/CAP;Eixo 1;Bloco 5;Conformidade do conteudo programatico;Justificativa_E1_Bloco5;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 6;Conformidade do corpo docente;E1_6.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Os professores do curso sao os mesmos divulgados anteriormente.
+CCP/CAP;Eixo 1;Bloco 6;Conformidade do corpo docente;E1_6.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Alteracoes no corpo docente foram comunicadas previamente aos alunos e/ou a Comissao de Certificacao.
+CCP/CAP;Eixo 1;Bloco 6;Conformidade do corpo docente;Justificativa_E1_Bloco6;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 7;Imparcialidade e ausencia de promocao comercial;E1_7.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O conteudo foi apresentado de forma tecnica e imparcial.
+CCP/CAP;Eixo 1;Bloco 7;Imparcialidade e ausencia de promocao comercial;E1_7.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao houve divulgacao de produtos sem finalidade educativa.
+CCP/CAP;Eixo 1;Bloco 7;Imparcialidade e ausencia de promocao comercial;E1_7.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Nao houve inducao de preferencia sem fundamentacao tecnica objetiva.
+CCP/CAP;Eixo 1;Bloco 7;Imparcialidade e ausencia de promocao comercial;Justificativa_E1_Bloco7;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 1;Bloco 8;Politica de precos e acesso;E1_8.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Valores informados previamente de forma clara.
+CCP/CAP;Eixo 1;Bloco 8;Politica de precos e acesso;E1_8.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Criterios aplicados de forma objetiva e isonomica.
+CCP/CAP;Eixo 1;Bloco 8;Politica de precos e acesso;E1_8.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Politicas de bolsas divulgadas com criterios claros.
+CCP/CAP;Eixo 1;Bloco 8;Politica de precos e acesso;Justificativa_E1_Bloco8;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;E2_1.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Aderencia ao conteudo programatico divulgado.
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;E2_1.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Atualizacao compativel com a legislacao vigente.
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;E2_1.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Coerencia do material didatico.
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;E2_1.4;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Coerencia das avaliacoes com o conteudo trabalhado.
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;E2_1.5;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;O curso proporcionou os conhecimentos e habilidades esperados.
+CCP/CAP;Eixo 2;Bloco 1;Qualidade e adequacao do conteudo;Justificativa_E2_Bloco1;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 2;Bloco 2;Corpo docente - desempenho pedagogico;E2_2.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Dominio tecnico do conteudo ministrado.
+CCP/CAP;Eixo 2;Bloco 2;Corpo docente - desempenho pedagogico;E2_2.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Respostas as duvidas de forma clara e fundamentada.
+CCP/CAP;Eixo 2;Bloco 2;Corpo docente - desempenho pedagogico;Justificativa_E2_Bloco2;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 2;Bloco 3;Infraestrutura e suporte;E2_3.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Estabilidade da plataforma durante aulas e avaliacoes.
+CCP/CAP;Eixo 2;Bloco 3;Infraestrutura e suporte;E2_3.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Suporte tecnico prestado de forma tempestiva.
+CCP/CAP;Eixo 2;Bloco 3;Infraestrutura e suporte;E2_3.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Canais de comunicacao acessiveis e funcionais.
+CCP/CAP;Eixo 2;Bloco 3;Infraestrutura e suporte;Justificativa_E2_Bloco3;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 3;Bloco 1;Entidade certificadora;E3_3.1.1;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Considero que o curso foi conduzido de forma tecnica e profissional.
+CCP/CAP;Eixo 3;Bloco 1;Entidade certificadora;E3_3.1.2;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;A entidade demonstrou capacidade tecnica para realizacao do curso.
+CCP/CAP;Eixo 3;Bloco 1;Entidade certificadora;E3_3.1.3;Nota 1-5;SIM;Se nota <= 2, exigir justificativa do bloco;Recomendaria esta entidade certificadora.
+CCP/CAP;Eixo 3;Bloco 1;Entidade certificadora;Justificativa_E3_Bloco1;Texto longo;CONDICIONAL;Abrir quando houver nota <= 2 no bloco;Descricao objetiva e fundamentada do fato observado
+CCP/CAP;Eixo 3;Bloco 2;Avaliacao geral do curso;Avaliacao_Geral_Texto;Texto longo;SIM;;Considerando os blocos anteriores, forneca uma avaliacao geral do curso.
+CCP/CAP;Eixo 3;Bloco 3;Observacoes finais;Observacoes_Finais;Texto longo;NAO;;Item nao obrigatorio. Caso deseje, este e um espaco livre para sua manifestacao sobre o curso ou para sugestoes de melhoria de sua qualidade.

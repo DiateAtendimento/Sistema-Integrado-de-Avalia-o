@@ -84,6 +84,9 @@ function createBlockStep(blockKey, blockName, questions, cadastroOptions) {
   const step = document.createElement('div');
   step.className = 'form-step';
   step.dataset.step = blockKey;
+  if (questions.some((question) => (question.Acao_Condicional || '').includes('Modalidade_Prova = Online'))) {
+    step.dataset.requiresOnline = 'true';
+  }
   step.innerHTML = `
     <div class="block-card card p-3 mb-4">
       <div class="card-header">${blockName}</div>
@@ -125,13 +128,18 @@ function groupBy(array, key) {
 function updateProgress(currentIndex, total) {
   const progress = document.getElementById('form-progress');
   if (!progress) return;
+  if (!total) {
+    progress.style.width = '0%';
+    progress.textContent = '0%';
+    return;
+  }
   const percent = Math.round(((currentIndex + 1) / total) * 100);
   progress.style.width = `${percent}%`;
   progress.textContent = `${percent}%`;
 }
 
 function validateStep(step) {
-  const inputs = Array.from(step.querySelectorAll('input, textarea, select')); 
+  const inputs = Array.from(step.querySelectorAll('input, textarea, select'));
   let valid = true;
   inputs.forEach((input) => {
     if (input.required && input.offsetParent !== null && !input.value.trim()) {
@@ -147,10 +155,6 @@ function validateStep(step) {
 function toggleConditionalFields(step, blockKey) {
   const fields = step.querySelectorAll(`.conditional-field[data-conditional="${blockKey}"]`);
   if (!fields.length) return;
-  const values = Array.from(step.querySelectorAll('[name]')).filter((input) => {
-    return input.name.includes(blockKey) === false ? true : true;
-  });
-  const blockScores = Array.from(step.querySelectorAll('select')).filter((input) => input.name.startsWith(blockKey));
   const shouldShow = Array.from(step.querySelectorAll('select')).some((select) => Number(select.value) > 0 && Number(select.value) <= 2);
   fields.forEach((field) => {
     field.style.display = shouldShow ? 'block' : 'none';
@@ -191,6 +195,7 @@ async function setupForm(formulario) {
       submitButton.disabled = true;
       return;
     }
+
     const grouped = groupBy(questions, 'Bloco_Eixo');
     const stepKeys = Object.keys(grouped);
 
@@ -203,16 +208,47 @@ async function setupForm(formulario) {
 
     let currentStep = 0;
     const stepElements = Array.from(stepsContainer.querySelectorAll('.form-step'));
-    const totalSteps = stepElements.length;
+
+    function getVisibleSteps() {
+      return stepElements.filter((element) => !element.classList.contains('d-none'));
+    }
+
+    function syncConditionalSteps() {
+      const modalidade = form.querySelector('[name="Modalidade_Prova"]')?.value || '';
+      const isOnline = modalidade.toLowerCase().includes('online');
+      stepElements.forEach((element) => {
+        if (element.dataset.requiresOnline !== 'true') return;
+        element.classList.toggle('d-none', !isOnline);
+        if (!isOnline) {
+          element.querySelectorAll('input, textarea, select').forEach((input) => {
+            input.value = '';
+            input.classList.remove('is-invalid');
+          });
+        }
+      });
+    }
 
     function showStep(index) {
-      stepElements.forEach((element, idx) => {
-        element.classList.toggle('active', idx === index);
+      const visibleSteps = getVisibleSteps();
+      const totalSteps = visibleSteps.length;
+      if (!totalSteps) {
+        prevButton.style.display = 'none';
+        nextButton.style.display = 'none';
+        submitButton.classList.add('d-none');
+        updateProgress(0, 0);
+        return;
+      }
+
+      const safeIndex = Math.max(0, Math.min(index, totalSteps - 1));
+      currentStep = safeIndex;
+      stepElements.forEach((element) => {
+        element.classList.remove('active');
       });
-      prevButton.style.display = index === 0 ? 'none' : 'inline-block';
-      nextButton.style.display = index === totalSteps - 1 ? 'none' : 'inline-block';
-      submitButton.classList.toggle('d-none', index !== totalSteps - 1);
-      updateProgress(index, totalSteps);
+      visibleSteps[safeIndex].classList.add('active');
+      prevButton.style.display = safeIndex === 0 ? 'none' : 'inline-block';
+      nextButton.style.display = safeIndex === totalSteps - 1 ? 'none' : 'inline-block';
+      submitButton.classList.toggle('d-none', safeIndex !== totalSteps - 1);
+      updateProgress(safeIndex, totalSteps);
     }
 
     stepsContainer.addEventListener('change', (event) => {
@@ -221,6 +257,10 @@ async function setupForm(formulario) {
       if (!step) return;
       const blockKey = step.dataset.step;
       toggleConditionalFields(step, blockKey);
+      if (changed.name === 'Modalidade_Prova') {
+        syncConditionalSteps();
+        showStep(currentStep);
+      }
     });
 
     prevButton.addEventListener('click', () => {
@@ -230,13 +270,13 @@ async function setupForm(formulario) {
     });
 
     nextButton.addEventListener('click', () => {
-      const step = stepElements[currentStep];
+      const step = getVisibleSteps()[currentStep];
       if (!validateStep(step)) {
         showMessage(messageContainer, 'Preencha todos os campos obrigatórios antes de avançar.', 'danger');
         return;
       }
       messageContainer.innerHTML = '';
-      if (currentStep < totalSteps - 1) {
+      if (currentStep < getVisibleSteps().length - 1) {
         currentStep += 1;
         showStep(currentStep);
       }
@@ -244,7 +284,7 @@ async function setupForm(formulario) {
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const step = stepElements[currentStep];
+      const step = getVisibleSteps()[currentStep];
       if (!validateStep(step)) {
         showMessage(messageContainer, 'Preencha os campos obrigatórios antes de enviar.', 'danger');
         return;
@@ -262,12 +302,14 @@ async function setupForm(formulario) {
         showMessage(messageContainer, result.message || 'Avaliação enviada com sucesso.', 'success');
         form.reset();
         currentStep = 0;
+        syncConditionalSteps();
         showStep(currentStep);
       } catch (error) {
         showMessage(messageContainer, error.message || 'Não foi possível enviar a avaliação.', 'danger');
       }
     });
 
+    syncConditionalSteps();
     showStep(currentStep);
   } catch (error) {
     const container = document.getElementById('form-message');
