@@ -77,6 +77,18 @@ function createControlField(question, cadastroOptions) {
     return fieldWrapper;
   }
 
+  if (fieldName === 'Data_Exame' || fieldName === 'Data_Curso') {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'form-control';
+    input.id = fieldName;
+    input.name = fieldName;
+    if (required) input.required = true;
+    fieldWrapper.appendChild(fieldLabel);
+    fieldWrapper.appendChild(input);
+    return fieldWrapper;
+  }
+
   if (type.includes('texto') || type.includes('observacao') || fieldName.toLowerCase().includes('justificativa')) {
     const textarea = document.createElement('textarea');
     textarea.className = 'form-control';
@@ -87,18 +99,6 @@ function createControlField(question, cadastroOptions) {
     textarea.placeholder = 'Digite sua resposta...';
     fieldWrapper.appendChild(fieldLabel);
     fieldWrapper.appendChild(textarea);
-    return fieldWrapper;
-  }
-
-  if (fieldName === 'Data_Exame' || fieldName === 'Data_Curso') {
-    const input = document.createElement('input');
-    input.type = 'date';
-    input.className = 'form-control';
-    input.id = fieldName;
-    input.name = fieldName;
-    if (required) input.required = true;
-    fieldWrapper.appendChild(fieldLabel);
-    fieldWrapper.appendChild(input);
     return fieldWrapper;
   }
 
