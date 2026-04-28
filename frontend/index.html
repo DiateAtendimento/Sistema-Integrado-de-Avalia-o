@@ -9,42 +9,96 @@
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body class="bg-light">
-  <header class="site-header py-5 text-center">
+  <header class="site-header site-header-home">
+    <div class="site-header-orb site-header-orb-a"></div>
+    <div class="site-header-orb site-header-orb-b"></div>
     <div class="container">
-      <div class="brand-mark mx-auto"><i class="bi bi-clipboard2-data fs-3"></i></div>
-      <div class="page-kicker">Plataforma institucional</div>
-      <h1 class="display-5 fw-bold">SIA</h1>
-      <p class="lead mb-0">Sistema Integrado de Avaliação para Exame por Provas e CCP/CAP</p>
+      <section class="hero-shell">
+        <div class="hero-copy">
+          <div class="brand-mark brand-mark-home"><i class="bi bi-clipboard2-data fs-3"></i></div>
+          <div class="page-kicker">Plataforma institucional</div>
+          <h1>SIA</h1>
+          <p class="hero-lead">Sistema Integrado de Avaliação para Exame por Provas e CCP/CAP, com operação pública estruturada e visão administrativa orientada por dados.</p>
+          <div class="hero-badges">
+            <span class="hero-badge"><i class="bi bi-shield-check"></i>Fluxo auditável</span>
+            <span class="hero-badge"><i class="bi bi-diagram-3"></i>Blocos estruturados</span>
+            <span class="hero-badge"><i class="bi bi-bar-chart-line"></i>Leitura gerencial</span>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="hero-panel-card hero-panel-card-primary">
+            <span class="hero-panel-kicker">Acesso público</span>
+            <strong>Respostas guiadas</strong>
+            <p>Formulários em etapas, regras condicionais e experiência orientada por clareza.</p>
+          </div>
+          <div class="hero-panel-grid">
+            <div class="hero-panel-card">
+              <span class="hero-metric">02</span>
+              <p>instrumentos principais de avaliação</p>
+            </div>
+            <div class="hero-panel-card">
+              <span class="hero-metric">01</span>
+              <p>painel administrativo consolidado</p>
+            </div>
+            <div class="hero-panel-card">
+              <span class="hero-metric">1-5</span>
+              <p>escala padronizada com tratamento de criticidade</p>
+            </div>
+            <div class="hero-panel-card">
+              <span class="hero-metric">360°</span>
+              <p>visão de acompanhamento institucional</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </header>
 
-  <main class="container page-shell">
-    <section class="row gy-4">
-      <div class="col-md-6">
-        <div class="card portal-card">
-          <div class="card-body">
-            <div class="portal-icon"><i class="bi bi-ui-checks-grid fs-4"></i></div>
-            <h2 class="card-title h4">Respondente</h2>
-            <p class="card-text">Preencha avaliações estruturadas por blocos e registre sua experiência.</p>
-            <div class="portal-actions">
-              <a href="responder-exame.html" class="btn btn-primary"><i class="bi bi-file-earmark-text"></i>Avaliação do Exame por Provas</a>
-              <a href="responder-ccp-cap.html" class="btn btn-outline-primary"><i class="bi bi-card-checklist"></i>Avaliação CCP/CAP</a>
-            </div>
-          </div>
-        </div>
+  <main class="container landing-shell">
+    <section class="landing-intro">
+      <div>
+        <div class="section-kicker">Jornada principal</div>
+        <h2>Escolha a porta de entrada do sistema</h2>
       </div>
-      <div class="col-md-6">
-        <div class="card portal-card">
-          <div class="card-body">
-            <div class="portal-icon"><i class="bi bi-speedometer2 fs-4"></i></div>
-            <h2 class="card-title h4">Admin</h2>
-            <p class="card-text">Acesse o painel administrativo para consultar respostas e indicadores do sistema.</p>
-            <div class="portal-actions">
-              <a href="admin-login.html" class="btn btn-secondary"><i class="bi bi-shield-lock"></i>Acessar área restrita</a>
-            </div>
-          </div>
+      <p>O ambiente público foi desenhado para coleta estruturada de avaliações. A área administrativa concentra leitura operacional, detalhamento e acompanhamento institucional.</p>
+    </section>
+
+    <section class="landing-grid">
+      <article class="portal-card portal-card-publico">
+        <div class="portal-card-top">
+          <div class="portal-icon portal-icon-publico"><i class="bi bi-ui-checks-grid fs-4"></i></div>
+          <span class="portal-chip">Respondente</span>
         </div>
-      </div>
+        <h3>Responder avaliações</h3>
+        <p>Preencha formulários estruturados para registrar a experiência do exame por provas ou do curso CCP/CAP com lógica por blocos e justificativas críticas.</p>
+        <ul class="portal-feature-list">
+          <li>Fluxo em etapas com progresso visível</li>
+          <li>Escala padronizada com regras condicionais</li>
+          <li>Envio orientado por consistência de dados</li>
+        </ul>
+        <div class="portal-actions portal-actions-stack">
+          <a href="responder-exame.html" class="btn btn-primary btn-hero-primary"><i class="bi bi-file-earmark-text"></i>Avaliação do Exame por Provas</a>
+          <a href="responder-ccp-cap.html" class="btn btn-light btn-hero-secondary"><i class="bi bi-card-checklist"></i>Avaliação CCP/CAP</a>
+        </div>
+      </article>
+
+      <article class="portal-card portal-card-admin">
+        <div class="portal-card-top">
+          <div class="portal-icon portal-icon-admin"><i class="bi bi-speedometer2 fs-4"></i></div>
+          <span class="portal-chip">Gestão</span>
+        </div>
+        <h3>Painel administrativo</h3>
+        <p>Acesse uma camada de leitura institucional com respostas detalhadas, filtros analíticos, classificação visual e exportação da base consolidada.</p>
+        <ul class="portal-feature-list">
+          <li>Consulta por entidade, modalidade, data e classificação</li>
+          <li>Detalhamento estruturado por resposta</li>
+          <li>Download da planilha administrativa</li>
+        </ul>
+        <div class="portal-actions">
+          <a href="admin-login.html" class="btn btn-secondary btn-hero-admin"><i class="bi bi-shield-lock"></i>Acessar área restrita</a>
+        </div>
+      </article>
     </section>
   </main>
 
