@@ -32,6 +32,21 @@ function formatAdminDate(value) {
   return value;
 }
 
+function parseLocalDateInput(value, endOfDay = false) {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return endOfDay
+    ? new Date(year, month - 1, day, 23, 59, 59, 999)
+    : new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function parseResponseDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function formatDetailLabel(key) {
   return key
     .replace(/_/g, ' ')
@@ -165,6 +180,7 @@ function createDetailCard(item) {
   return Object.entries(item)
     .map(([key, value]) => {
       let formattedValue = value || '-';
+
       if (key.toLowerCase().includes('data')) {
         formattedValue = formatAdminDate(value);
       } else if (
@@ -176,30 +192,40 @@ function createDetailCard(item) {
         formattedValue = formatNumericValue(value);
       }
 
-      return `<dt class="col-sm-4">${formatDetailLabel(key)}</dt><dd class="col-sm-8">${formattedValue}</dd>`;
+      return `
+        <div class="response-detail-row">
+          <dt>${formatDetailLabel(key)}</dt>
+          <dd>${formattedValue}</dd>
+        </div>
+      `;
     })
     .join('');
 }
 
-function buildDetailMarkup(item) {
+function buildDetailModalMarkup(item) {
   return `
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start gap-3">
-        <div>
-          <div class="response-panel-kicker mb-2">Resposta detalhada</div>
-          <h5 class="mb-2">Detalhes da resposta</h5>
+    <div class="response-modal-backdrop" data-close-modal="true">
+      <div class="response-modal-card" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
+        <div class="response-modal-header">
+          <div>
+            <div class="response-panel-kicker mb-2">Resposta detalhada</div>
+            <h2 id="response-modal-title">Detalhes da resposta</h2>
+          </div>
+          <button type="button" class="response-modal-close" aria-label="Fechar detalhes" onclick="closeRespostaDetalheModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeRespostaDetalhe()" aria-label="Fechar detalhes">
-          <i class="bi bi-x-lg"></i>
-        </button>
+        <div class="response-modal-body">
+          <dl class="response-detail-grid">${createDetailCard(item)}</dl>
+        </div>
       </div>
-      <dl class="row mb-0">${createDetailCard(item)}</dl>
     </div>
   `;
 }
 
-function closeRespostaDetalhe() {
-  document.getElementById('resposta-detalhe')?.remove();
+function closeRespostaDetalheModal() {
+  document.getElementById('response-detail-modal')?.remove();
+  document.body.classList.remove('modal-open');
 }
 
 function renderStatusBadge(item, type) {
@@ -215,27 +241,10 @@ function updateResponseSummary(type, rows) {
   target.textContent = `${rows.length} resultado(s) • ${criticalCount} crítico(s)`;
 }
 
-function getFilterableColumns(type) {
-  return type === 'exame'
-    ? [
-        { key: 'Entidade_Certificadora', label: 'Entidade' },
-        { key: 'Tipo_Certificacao', label: 'Certificação' },
-        { key: 'Data_Recebimento', label: 'Data' },
-        { key: '_classificacao', label: 'Classificação' }
-      ]
-    : [
-        { key: 'Entidade_Certificadora', label: 'Entidade' },
-        { key: 'Modalidade_CCP_CAP', label: 'Modalidade' },
-        { key: 'Data_Recebimento', label: 'Data' },
-        { key: '_classificacao', label: 'Classificação' }
-      ];
-}
-
 function getColumnValues(rows, key, type) {
   const values = rows
     .map((item) => {
       if (key === '_classificacao') return getRowClassification(item, type).label;
-      if (key === 'Data_Recebimento') return formatAdminDate(item[key]);
       return item[key] || '-';
     })
     .filter((value, index, self) => value && self.indexOf(value) === index);
@@ -243,17 +252,33 @@ function getColumnValues(rows, key, type) {
   return values.sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
+function matchesDateRange(itemDate, filterValue) {
+  if (!filterValue) return true;
+  const responseDate = parseResponseDate(itemDate);
+  if (!responseDate) return false;
+
+  const start = parseLocalDateInput(filterValue.startDate);
+  const end = parseLocalDateInput(filterValue.endDate, true);
+
+  if (start && responseDate < start) return false;
+  if (end && responseDate > end) return false;
+  return true;
+}
+
 function applyFilters(rows, type) {
   const activeFilters = respostasState.filters[type] || {};
   return rows.filter((item) => {
     return Object.entries(activeFilters).every(([key, value]) => {
-      if (!value) return true;
+      if (!value || (typeof value === 'object' && !value.startDate && !value.endDate)) return true;
+
       if (key === '_classificacao') {
         return getRowClassification(item, type).label === value;
       }
+
       if (key === 'Data_Recebimento') {
-        return formatAdminDate(item[key]) === value;
+        return matchesDateRange(item[key], value);
       }
+
       return (item[key] || '') === value;
     });
   });
@@ -264,28 +289,68 @@ function closeAllFilterMenus() {
   document.querySelectorAll('.table-filter-button').forEach((button) => button.classList.remove('active'));
 }
 
+function buildDateFilterMarkup(type, key, currentValue) {
+  return `
+    <label>Data inicial</label>
+    <input type="date" class="form-control form-control-sm" id="filter-start-${type}-${key}" value="${currentValue?.startDate || ''}" />
+    <label class="mt-2">Data final</label>
+    <input type="date" class="form-control form-control-sm" id="filter-end-${type}-${key}" value="${currentValue?.endDate || ''}" />
+    <p class="table-filter-help">Você pode usar apenas a data inicial, apenas a data final ou as duas para filtrar por intervalo.</p>
+  `;
+}
+
+function buildSelectFilterMarkup(type, key, values, currentValue) {
+  return `
+    <select class="form-select form-select-sm" id="filter-value-${type}-${key}">
+      <option value="">Todos</option>
+      ${values.map((value) => `<option value="${value}" ${currentValue === value ? 'selected' : ''}>${value}</option>`).join('')}
+    </select>
+  `;
+}
+
+function getFilterMenuMarkup(type, key, currentValue) {
+  if (key === 'Data_Recebimento') {
+    return buildDateFilterMarkup(type, key, currentValue);
+  }
+
+  const values = getColumnValues(respostasState[type], key, type);
+  return buildSelectFilterMarkup(type, key, values, currentValue);
+}
+
+function positionFilterMenu(wrapper, button) {
+  const rect = button.getBoundingClientRect();
+  const menu = wrapper.firstElementChild;
+  const viewportPadding = 12;
+  const menuRect = menu.getBoundingClientRect();
+
+  let left = rect.right - menuRect.width;
+  left = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuRect.width - viewportPadding));
+
+  let top = rect.bottom + 10;
+  if (top + menuRect.height > window.innerHeight - viewportPadding) {
+    top = Math.max(viewportPadding, rect.top - menuRect.height - 10);
+  }
+
+  wrapper.style.left = `${left}px`;
+  wrapper.style.top = `${top}px`;
+}
+
 function openColumnFilter(type, key, button) {
   closeAllFilterMenus();
 
-  const rows = respostasState[type];
-  const values = getColumnValues(rows, key, type);
-  const currentValue = respostasState.filters[type]?.[key] || '';
-
+  const currentValue = respostasState.filters[type]?.[key] || (key === 'Data_Recebimento' ? { startDate: '', endDate: '' } : '');
   const wrapper = document.createElement('div');
   wrapper.className = 'table-filter-menu-wrap';
-  wrapper.style.position = 'absolute';
-  wrapper.style.right = '0';
-  wrapper.style.top = '2.1rem';
-  wrapper.style.zIndex = '20';
+  wrapper.style.position = 'fixed';
+  wrapper.style.zIndex = '1200';
+  wrapper.dataset.type = type;
+  wrapper.dataset.key = key;
 
   const menu = document.createElement('div');
   menu.className = 'table-filter-menu';
   menu.innerHTML = `
     <label>${button.dataset.label}</label>
-    <select class="form-select form-select-sm" id="filter-value-${type}-${key}">
-      <option value="">Todos</option>
-      ${values.map((value) => `<option value="${value}" ${currentValue === value ? 'selected' : ''}>${value}</option>`).join('')}
-    </select>
+    ${getFilterMenuMarkup(type, key, currentValue)}
     <div class="table-filter-actions">
       <button type="button" class="btn btn-sm btn-outline-secondary" data-action="clear">Limpar</button>
       <button type="button" class="btn btn-sm btn-primary" data-action="apply">Aplicar</button>
@@ -293,11 +358,11 @@ function openColumnFilter(type, key, button) {
   `;
 
   wrapper.appendChild(menu);
-  button.parentNode.style.position = 'relative';
-  button.parentNode.appendChild(wrapper);
+  document.body.appendChild(wrapper);
+  positionFilterMenu(wrapper, button);
   button.classList.add('active');
 
-  menu.addEventListener('click', (event) => event.stopPropagation());
+  wrapper.addEventListener('click', (event) => event.stopPropagation());
 
   menu.querySelector('[data-action="clear"]').addEventListener('click', () => {
     delete respostasState.filters[type][key];
@@ -306,13 +371,24 @@ function openColumnFilter(type, key, button) {
   });
 
   menu.querySelector('[data-action="apply"]').addEventListener('click', () => {
-    const value = menu.querySelector(`#filter-value-${type}-${key}`).value;
     if (!respostasState.filters[type]) respostasState.filters[type] = {};
 
-    if (value) {
-      respostasState.filters[type][key] = value;
+    if (key === 'Data_Recebimento') {
+      const startDate = menu.querySelector(`#filter-start-${type}-${key}`).value;
+      const endDate = menu.querySelector(`#filter-end-${type}-${key}`).value;
+
+      if (startDate || endDate) {
+        respostasState.filters[type][key] = { startDate, endDate };
+      } else {
+        delete respostasState.filters[type][key];
+      }
     } else {
-      delete respostasState.filters[type][key];
+      const value = menu.querySelector(`#filter-value-${type}-${key}`).value;
+      if (value) {
+        respostasState.filters[type][key] = value;
+      } else {
+        delete respostasState.filters[type][key];
+      }
     }
 
     closeAllFilterMenus();
@@ -400,12 +476,18 @@ function renderResponsesTable(type) {
   table.appendChild(tbody);
 
   table.querySelectorAll('.table-filter-button').forEach((button) => {
-    const isActive = Boolean(respostasState.filters[type]?.[button.dataset.key]);
+    const activeFilter = respostasState.filters[type]?.[button.dataset.key];
+    const isActive = Boolean(
+      typeof activeFilter === 'object'
+        ? activeFilter?.startDate || activeFilter?.endDate
+        : activeFilter
+    );
+
     button.classList.toggle('active', isActive);
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      const alreadyOpen = button.parentNode.querySelector('.table-filter-menu-wrap');
-      if (alreadyOpen) {
+      const alreadyOpen = document.querySelector('.table-filter-menu-wrap');
+      if (alreadyOpen && alreadyOpen.dataset.key === button.dataset.key && alreadyOpen.dataset.type === type) {
         closeAllFilterMenus();
         return;
       }
@@ -434,17 +516,19 @@ async function showRespostaDetalhe(id) {
 
   try {
     const result = await apiGet(`/api/admin/respostas/${id}`, getAdminHeaders());
-    let detailArea = document.getElementById('resposta-detalhe');
+    closeRespostaDetalheModal();
 
-    if (!detailArea) {
-      detailArea = document.createElement('section');
-      detailArea.id = 'resposta-detalhe';
-      detailArea.className = 'card response-panel mt-4';
-      document.querySelector('main.container')?.appendChild(detailArea);
-    }
+    const modal = document.createElement('div');
+    modal.id = 'response-detail-modal';
+    modal.innerHTML = buildDetailModalMarkup(result.resposta);
+    document.body.appendChild(modal);
+    document.body.classList.add('modal-open');
 
-    detailArea.innerHTML = buildDetailMarkup(result.resposta);
-    detailArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    modal.querySelector('[data-close-modal="true"]').addEventListener('click', (event) => {
+      if (event.target.dataset.closeModal === 'true') {
+        closeRespostaDetalheModal();
+      }
+    });
   } catch (error) {
     alert(error.message || 'Não foi possível carregar o detalhe da resposta.');
   }
@@ -483,6 +567,21 @@ async function downloadPlanilhaAdmin() {
 window.addEventListener('click', () => {
   closeAllFilterMenus();
 });
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeAllFilterMenus();
+    closeRespostaDetalheModal();
+  }
+});
+
+window.addEventListener('resize', () => {
+  closeAllFilterMenus();
+});
+
+window.addEventListener('scroll', () => {
+  closeAllFilterMenus();
+}, true);
 
 window.addEventListener('DOMContentLoaded', () => {
   const logoutButton = document.getElementById('logout-button');
