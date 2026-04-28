@@ -7,6 +7,11 @@ let respostasState = {
   }
 };
 
+const questionMetaCache = {
+  exame: null,
+  ccp: null
+};
+
 function getAdminHeaders() {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -15,6 +20,15 @@ function getAdminHeaders() {
 function redirectToLogin() {
   clearAuthToken();
   window.location.href = 'admin-login.html';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatAdminDate(value) {
@@ -68,6 +82,13 @@ function formatNumericValue(value) {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2
   });
+}
+
+function getResponseType(item) {
+  if (String(item.ID_Avaliacao || '').startsWith('EPP-') || Object.prototype.hasOwnProperty.call(item, 'Media_Geral_Exame')) {
+    return 'exame';
+  }
+  return 'ccp';
 }
 
 function getRowAverage(item, type) {
@@ -176,58 +197,6 @@ async function loadDashboard() {
   }
 }
 
-function createDetailCard(item) {
-  return Object.entries(item)
-    .map(([key, value]) => {
-      let formattedValue = value || '-';
-
-      if (key.toLowerCase().includes('data')) {
-        formattedValue = formatAdminDate(value);
-      } else if (
-        key.startsWith('B') ||
-        key.startsWith('E') ||
-        key.startsWith('Media_') ||
-        key === 'Nota_Global_Ponderada'
-      ) {
-        formattedValue = formatNumericValue(value);
-      }
-
-      return `
-        <div class="response-detail-row">
-          <dt>${formatDetailLabel(key)}</dt>
-          <dd>${formattedValue}</dd>
-        </div>
-      `;
-    })
-    .join('');
-}
-
-function buildDetailModalMarkup(item) {
-  return `
-    <div class="response-modal-backdrop" data-close-modal="true">
-      <div class="response-modal-card" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
-        <div class="response-modal-header">
-          <div>
-            <div class="response-panel-kicker mb-2">Resposta detalhada</div>
-            <h2 id="response-modal-title">Detalhes da resposta</h2>
-          </div>
-          <button type="button" class="response-modal-close" aria-label="Fechar detalhes" onclick="closeRespostaDetalheModal()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="response-modal-body">
-          <dl class="response-detail-grid">${createDetailCard(item)}</dl>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function closeRespostaDetalheModal() {
-  document.getElementById('response-detail-modal')?.remove();
-  document.body.classList.remove('modal-open');
-}
-
 function renderStatusBadge(item, type) {
   const status = getRowClassification(item, type);
   return `<span class="status-badge ${status.className}">${status.label}</span>`;
@@ -291,20 +260,27 @@ function closeAllFilterMenus() {
 
 function buildDateFilterMarkup(type, key, currentValue) {
   return `
-    <label>Data inicial</label>
-    <input type="date" class="form-control form-control-sm" id="filter-start-${type}-${key}" value="${currentValue?.startDate || ''}" />
-    <label class="mt-2">Data final</label>
-    <input type="date" class="form-control form-control-sm" id="filter-end-${type}-${key}" value="${currentValue?.endDate || ''}" />
-    <p class="table-filter-help">Você pode usar apenas a data inicial, apenas a data final ou as duas para filtrar por intervalo.</p>
+    <div class="table-filter-field">
+      <label for="filter-start-${type}-${key}">Data inicial</label>
+      <input type="date" class="form-control form-control-sm" id="filter-start-${type}-${key}" value="${currentValue?.startDate || ''}" />
+    </div>
+    <div class="table-filter-field">
+      <label for="filter-end-${type}-${key}">Data final</label>
+      <input type="date" class="form-control form-control-sm" id="filter-end-${type}-${key}" value="${currentValue?.endDate || ''}" />
+    </div>
+    <p class="table-filter-help">Use início, fim ou o intervalo completo. O filtro considera as datas-limite informadas.</p>
   `;
 }
 
 function buildSelectFilterMarkup(type, key, values, currentValue) {
   return `
-    <select class="form-select form-select-sm" id="filter-value-${type}-${key}">
-      <option value="">Todos</option>
-      ${values.map((value) => `<option value="${value}" ${currentValue === value ? 'selected' : ''}>${value}</option>`).join('')}
-    </select>
+    <div class="table-filter-field">
+      <label for="filter-value-${type}-${key}">Seleção</label>
+      <select class="form-select form-select-sm" id="filter-value-${type}-${key}">
+        <option value="">Todos</option>
+        ${values.map((value) => `<option value="${escapeHtml(value)}" ${currentValue === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}
+      </select>
+    </div>
   `;
 }
 
@@ -320,7 +296,7 @@ function getFilterMenuMarkup(type, key, currentValue) {
 function positionFilterMenu(wrapper, button) {
   const rect = button.getBoundingClientRect();
   const menu = wrapper.firstElementChild;
-  const viewportPadding = 12;
+  const viewportPadding = 16;
   const menuRect = menu.getBoundingClientRect();
 
   let left = rect.right - menuRect.width;
@@ -349,7 +325,7 @@ function openColumnFilter(type, key, button) {
   const menu = document.createElement('div');
   menu.className = 'table-filter-menu';
   menu.innerHTML = `
-    <label>${button.dataset.label}</label>
+    <div class="table-filter-title">${escapeHtml(button.dataset.label)}</div>
     ${getFilterMenuMarkup(type, key, currentValue)}
     <div class="table-filter-actions">
       <button type="button" class="btn btn-sm btn-outline-secondary" data-action="clear">Limpar</button>
@@ -496,6 +472,278 @@ function renderResponsesTable(type) {
   });
 }
 
+function getIdentificationFields(type) {
+  if (type === 'exame') {
+    return [
+      { key: 'ID_Avaliacao', label: 'ID da avaliação' },
+      { key: 'Data_Recebimento', label: 'Data de recebimento', format: 'date' },
+      { key: 'Identificacao_Respondente', label: 'Identificação do respondente' },
+      { key: 'Entidade_Certificadora', label: 'Entidade certificadora' },
+      { key: 'Tipo_Certificacao', label: 'Tipo de certificação' },
+      { key: 'Nivel_Certificacao', label: 'Nível da certificação' },
+      { key: 'Modalidade_Prova', label: 'Modalidade da prova' },
+      { key: 'Data_Exame', label: 'Data do exame', format: 'date' }
+    ];
+  }
+
+  return [
+    { key: 'ID_Avaliacao', label: 'ID da avaliação' },
+    { key: 'Data_Recebimento', label: 'Data de recebimento', format: 'date' },
+    { key: 'Identificacao_Respondente', label: 'Identificação do respondente' },
+    { key: 'Entidade_Certificadora', label: 'Entidade certificadora' },
+    { key: 'Modalidade_CCP_CAP', label: 'Modalidade CCP/CAP' },
+    { key: 'Tipo_Certificacao', label: 'Tipo de certificação' },
+    { key: 'Data_Curso', label: 'Data do curso', format: 'date' }
+  ];
+}
+
+function getMetricFields(type) {
+  if (type === 'exame') {
+    return [
+      { label: 'Classificação', render: (item) => renderStatusBadge(item, type) },
+      { label: 'Média geral do exame', render: (item) => formatNumericValue(item.Media_Geral_Exame) },
+      { label: 'Flag crítico', render: (item) => item.Flag_Critico || 'FALSO' }
+    ];
+  }
+
+  return [
+    { label: 'Classificação', render: (item) => renderStatusBadge(item, type) },
+    { label: 'Média eixo 1', render: (item) => formatNumericValue(item.Media_Eixo1) },
+    { label: 'Média eixo 2', render: (item) => formatNumericValue(item.Media_Eixo2) },
+    { label: 'Média eixo 3', render: (item) => formatNumericValue(item.Media_Eixo3) },
+    { label: 'Nota global ponderada', render: (item) => formatNumericValue(item.Nota_Global_Ponderada) }
+  ];
+}
+
+function formatFieldValue(value, format) {
+  if (!value) return '-';
+  if (format === 'date') return formatAdminDate(value);
+  if (format === 'number') return formatNumericValue(value);
+  return value;
+}
+
+function buildSummaryCard(label, value, isRich = false) {
+  return `
+    <article class="response-summary-card ${isRich ? 'rich' : ''}">
+      <span class="response-summary-label">${escapeHtml(label)}</span>
+      <div class="response-summary-value">${isRich ? value : escapeHtml(value)}</div>
+    </article>
+  `;
+}
+
+function detectQuestionType(meta) {
+  const fieldType = normalizeStatusLabel(String(meta?.Tipo_Campo || ''));
+  if (fieldType.includes('radio') || fieldType.includes('nota') || fieldType.includes('escala')) {
+    return 'score';
+  }
+  return 'text';
+}
+
+async function ensureQuestionMeta(type) {
+  if (questionMetaCache[type]) return questionMetaCache[type];
+
+  try {
+    const formulario = type === 'exame' ? 'exame-provas' : 'ccp-cap';
+    const rows = await apiGet(`/api/perguntas/${formulario}`);
+    questionMetaCache[type] = rows || [];
+  } catch (error) {
+    questionMetaCache[type] = [];
+  }
+
+  return questionMetaCache[type];
+}
+
+function getBlockFallbackTitle(type, blockKey) {
+  const exameTitles = {
+    'B0': 'Identificação da avaliação',
+    'B1': 'Organização e infraestrutura',
+    'B2': 'Conduta e imparcialidade',
+    'B3': 'Conteúdo e adequação',
+    'B4': 'Integridade do processo',
+    'B5': 'Bloco específico - provas online',
+    'B6': 'Avaliação geral do exame'
+  };
+
+  const ccpTitles = {
+    'E0': 'Identificação da avaliação',
+    'E1': 'Avaliação institucional/regulatória',
+    'E2': 'Avaliação pedagógica',
+    'E3': 'Avaliação geral do curso'
+  };
+
+  return type === 'exame'
+    ? (exameTitles[blockKey] || `Bloco ${blockKey}`)
+    : (ccpTitles[blockKey] || `Eixo ${blockKey}`);
+}
+
+function buildQuestionSections(item, type, metaRows) {
+  const renderedKeys = new Set();
+  const blocks = new Map();
+
+  metaRows.forEach((meta, index) => {
+    const code = meta.Codigo_Pergunta;
+    if (!code || !Object.prototype.hasOwnProperty.call(item, code)) return;
+
+    const rawValue = item[code];
+    if (rawValue === '' || rawValue === null || typeof rawValue === 'undefined') return;
+
+    renderedKeys.add(code);
+    const blockKey = meta.Bloco_Eixo || code.split('_')[0];
+    if (!blocks.has(blockKey)) {
+      blocks.set(blockKey, {
+        order: index,
+        title: meta.Nome_Bloco_Eixo || getBlockFallbackTitle(type, blockKey),
+        items: []
+      });
+    }
+
+    blocks.get(blockKey).items.push({
+      code,
+      label: meta.Observacao || formatDetailLabel(code),
+      value: rawValue,
+      kind: detectQuestionType(meta)
+    });
+  });
+
+  const narrativeItems = Object.entries(item)
+    .filter(([key, value]) => {
+      if (!value) return false;
+      if (renderedKeys.has(key)) return false;
+      return (
+        key.startsWith('Justificativa') ||
+        key === 'Avaliacao_Geral_Texto' ||
+        key === 'Observacoes_Finais'
+      );
+    })
+    .map(([key, value]) => ({
+      label: formatDetailLabel(key),
+      value
+    }));
+
+  return {
+    blocks: [...blocks.entries()]
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([blockKey, data]) => ({ blockKey, ...data })),
+    narrativeItems
+  };
+}
+
+function buildQuestionAnswerItem(entry) {
+  const isScore = entry.kind === 'score' && Number.isFinite(Number(entry.value));
+  return `
+    <article class="response-answer-item ${isScore ? 'score' : 'text'}">
+      <div class="response-answer-text">
+        <span class="response-answer-code">${escapeHtml(entry.code)}</span>
+        <h4>${escapeHtml(entry.label)}</h4>
+      </div>
+      <div class="response-answer-value">
+        ${isScore
+          ? `<span class="response-score-badge">${formatNumericValue(entry.value)}</span>`
+          : `<div class="response-answer-copy">${escapeHtml(entry.value)}</div>`}
+      </div>
+    </article>
+  `;
+}
+
+function buildNarrativeItem(entry) {
+  return `
+    <article class="response-narrative-item">
+      <h4>${escapeHtml(entry.label)}</h4>
+      <p>${escapeHtml(entry.value)}</p>
+    </article>
+  `;
+}
+
+function buildQuestionSectionsMarkup(sections) {
+  const blockMarkup = sections.blocks.map((block) => `
+    <section class="response-detail-section">
+      <div class="response-detail-section-head">
+        <div class="response-panel-kicker">Bloco</div>
+        <h3>${escapeHtml(block.title)}</h3>
+      </div>
+      <div class="response-answer-list">
+        ${block.items.map(buildQuestionAnswerItem).join('')}
+      </div>
+    </section>
+  `).join('');
+
+  const narrativeMarkup = sections.narrativeItems.length
+    ? `
+      <section class="response-detail-section">
+        <div class="response-detail-section-head">
+          <div class="response-panel-kicker">Comentários</div>
+          <h3>Justificativas e observações</h3>
+        </div>
+        <div class="response-narrative-list">
+          ${sections.narrativeItems.map(buildNarrativeItem).join('')}
+        </div>
+      </section>
+    `
+    : '';
+
+  return `${blockMarkup}${narrativeMarkup}`;
+}
+
+async function buildDetailModalMarkup(item) {
+  const type = getResponseType(item);
+  const metaRows = await ensureQuestionMeta(type);
+  const summaryFields = getIdentificationFields(type);
+  const metricFields = getMetricFields(type);
+  const status = getRowClassification(item, type);
+  const sections = buildQuestionSections(item, type, metaRows);
+
+  const summaryMarkup = summaryFields
+    .map((field) => buildSummaryCard(field.label, formatFieldValue(item[field.key], field.format)))
+    .join('');
+
+  const metricMarkup = metricFields
+    .map((field) => buildSummaryCard(field.label, field.render(item), field.label === 'Classificação'))
+    .join('');
+
+  return `
+    <div class="response-modal-backdrop" data-close-modal="true">
+      <div class="response-modal-card" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
+        <div class="response-modal-header">
+          <div>
+            <div class="response-panel-kicker mb-2">${type === 'exame' ? 'Exame por Provas' : 'CCP/CAP'}</div>
+            <h2 id="response-modal-title">Detalhes da resposta</h2>
+            <p class="response-modal-subtitle">Leitura estruturada da avaliação, com identificação, métricas e respostas por bloco.</p>
+          </div>
+          <div class="response-modal-topbar">
+            <span class="status-badge ${status.className}">${status.label}</span>
+            <button type="button" class="response-modal-close" aria-label="Fechar detalhes" onclick="closeRespostaDetalheModal()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div class="response-modal-body">
+          <section class="response-detail-section">
+            <div class="response-detail-section-head">
+              <div class="response-panel-kicker">Identificação</div>
+              <h3>Informações principais</h3>
+            </div>
+            <div class="response-summary-grid">
+              ${summaryMarkup}
+            </div>
+          </section>
+
+          <section class="response-detail-section">
+            <div class="response-detail-section-head">
+              <div class="response-panel-kicker">Resultado</div>
+              <h3>Métricas da avaliação</h3>
+            </div>
+            <div class="response-summary-grid compact">
+              ${metricMarkup}
+            </div>
+          </section>
+
+          ${buildQuestionSectionsMarkup(sections)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function loadRespostas() {
   if (!(await requireAuth())) return;
 
@@ -511,6 +759,11 @@ async function loadRespostas() {
   }
 }
 
+function closeRespostaDetalheModal() {
+  document.getElementById('response-detail-modal')?.remove();
+  document.body.classList.remove('modal-open');
+}
+
 async function showRespostaDetalhe(id) {
   if (!(await requireAuth())) return;
 
@@ -520,7 +773,7 @@ async function showRespostaDetalhe(id) {
 
     const modal = document.createElement('div');
     modal.id = 'response-detail-modal';
-    modal.innerHTML = buildDetailModalMarkup(result.resposta);
+    modal.innerHTML = await buildDetailModalMarkup(result.resposta);
     document.body.appendChild(modal);
     document.body.classList.add('modal-open');
 
