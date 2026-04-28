@@ -16,8 +16,8 @@
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" href="admin-dashboard.html">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link active" href="admin-respostas.html">Respostas</a></li>
-          <li class="nav-item"><a class="nav-link" href="admin-alertas.html">Alertas</a></li>
           <li class="nav-item"><button id="download-planilha" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-download"></i>Baixar planilha</button></li>
+          <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-box-arrow-right"></i>Sair</button></li>
         </ul>
       </div>
     </div>
@@ -26,23 +26,37 @@
   <main class="container page-shell">
     <section class="page-title">
       <h1 class="h3">Respostas recebidas</h1>
-      <p class="text-muted mb-0">Consulte avaliações do Exame por Provas e CCP/CAP.</p>
+      <p class="text-muted mb-0">Consulte avaliações do Exame por Provas e do CCP/CAP com filtros por coluna e classificação visual.</p>
     </section>
 
-    <section class="card mb-4">
+    <section class="card response-panel mb-4">
       <div class="card-body">
-        <h2 class="card-title h5">Exame por Provas</h2>
-        <div class="table-responsive">
-          <table class="table table-striped" id="table-exame"></table>
+        <div class="response-panel-header">
+          <div>
+            <div class="response-panel-kicker">Base pública</div>
+            <h2 class="card-title h5 mb-1">Exame por Provas</h2>
+            <p class="text-muted mb-0">Leitura operacional das respostas mais recentes, com recorte por entidade, certificação, data e classificação.</p>
+          </div>
+          <div id="summary-exame" class="response-summary-chip"></div>
+        </div>
+        <div class="table-responsive response-table-shell">
+          <table class="table table-striped align-middle mb-0" id="table-exame"></table>
         </div>
       </div>
     </section>
 
-    <section class="card">
+    <section class="card response-panel">
       <div class="card-body">
-        <h2 class="card-title h5">CCP/CAP</h2>
-        <div class="table-responsive">
-          <table class="table table-striped" id="table-ccp"></table>
+        <div class="response-panel-header">
+          <div>
+            <div class="response-panel-kicker">Base pública</div>
+            <h2 class="card-title h5 mb-1">CCP/CAP</h2>
+            <p class="text-muted mb-0">Resultados do curso com classificação automática e filtros por modalidade, data e entidade.</p>
+          </div>
+          <div id="summary-ccp" class="response-summary-chip"></div>
+        </div>
+        <div class="table-responsive response-table-shell">
+          <table class="table table-striped align-middle mb-0" id="table-ccp"></table>
         </div>
       </div>
     </section>
