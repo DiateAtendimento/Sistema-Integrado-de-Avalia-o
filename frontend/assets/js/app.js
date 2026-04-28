@@ -23,20 +23,38 @@ function createControlField(question, cadastroOptions) {
   fieldLabel.setAttribute('for', fieldName);
 
   if (type.includes('nota') || fieldName.toLowerCase().includes('b') && fieldName.includes('.')) {
-    const select = document.createElement('select');
-    select.className = 'form-select';
-    select.id = fieldName;
-    select.name = fieldName;
-    select.innerHTML = '<option value="">Selecione</option>';
-    for (let i = 1; i <= 5; i += 1) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = i;
-      select.appendChild(option);
-    }
-    if (required) select.required = true;
+    const ratingGroup = document.createElement('div');
+    ratingGroup.className = 'rating-group';
+    ratingGroup.dataset.name = fieldName;
+    if (required) ratingGroup.dataset.required = 'true';
     fieldWrapper.appendChild(fieldLabel);
-    fieldWrapper.appendChild(select);
+
+    for (let i = 1; i <= 5; i += 1) {
+      const optionLabel = document.createElement('label');
+      optionLabel.className = 'rating-option';
+
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.className = 'rating-option-input';
+      radio.name = fieldName;
+      radio.value = i;
+      radio.id = `${fieldName}_${i}`;
+      if (required) radio.dataset.required = 'true';
+
+      const badge = document.createElement('span');
+      badge.className = 'rating-option-badge';
+      badge.textContent = i;
+
+      const helper = document.createElement('span');
+      helper.className = 'rating-option-helper';
+      helper.textContent = ['Discordo totalmente', 'Discordo parcialmente', 'Neutro', 'Concordo parcialmente', 'Concordo totalmente'][i - 1];
+
+      optionLabel.appendChild(radio);
+      optionLabel.appendChild(badge);
+      optionLabel.appendChild(helper);
+      ratingGroup.appendChild(optionLabel);
+    }
+    fieldWrapper.appendChild(ratingGroup);
     return fieldWrapper;
   }
 
@@ -69,6 +87,18 @@ function createControlField(question, cadastroOptions) {
     textarea.placeholder = 'Digite sua resposta...';
     fieldWrapper.appendChild(fieldLabel);
     fieldWrapper.appendChild(textarea);
+    return fieldWrapper;
+  }
+
+  if (fieldName === 'Data_Exame' || fieldName === 'Data_Curso') {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'form-control';
+    input.id = fieldName;
+    input.name = fieldName;
+    if (required) input.required = true;
+    fieldWrapper.appendChild(fieldLabel);
+    fieldWrapper.appendChild(input);
     return fieldWrapper;
   }
 
@@ -148,7 +178,18 @@ function updateProgress(currentIndex, total) {
 function validateStep(step) {
   const inputs = Array.from(step.querySelectorAll('input, textarea, select'));
   let valid = true;
+  const checkedRadioNames = new Set();
+
   inputs.forEach((input) => {
+    if (input.type === 'radio' && input.checked) {
+      checkedRadioNames.add(input.name);
+    }
+  });
+
+  inputs.forEach((input) => {
+    if (input.type === 'radio') {
+      return;
+    }
     if (input.required && input.offsetParent !== null && !input.value.trim()) {
       input.classList.add('is-invalid');
       valid = false;
@@ -156,13 +197,24 @@ function validateStep(step) {
       input.classList.remove('is-invalid');
     }
   });
+
+  const ratingGroups = Array.from(step.querySelectorAll('.rating-group[data-required="true"]'));
+  ratingGroups.forEach((group) => {
+    const groupName = group.dataset.name;
+    const isChecked = checkedRadioNames.has(groupName);
+    group.classList.toggle('is-invalid', !isChecked);
+    if (!isChecked) {
+      valid = false;
+    }
+  });
+
   return valid;
 }
 
 function toggleConditionalFields(step, blockKey) {
   const fields = step.querySelectorAll(`.conditional-field[data-conditional="${blockKey}"]`);
   if (!fields.length) return;
-  const shouldShow = Array.from(step.querySelectorAll('select')).some((select) => Number(select.value) > 0 && Number(select.value) <= 2);
+  const shouldShow = Array.from(step.querySelectorAll('.rating-option-input:checked')).some((input) => Number(input.value) > 0 && Number(input.value) <= 2);
   fields.forEach((field) => {
     field.style.display = shouldShow ? 'block' : 'none';
     const inner = field.querySelector('textarea, input');
@@ -242,9 +294,14 @@ async function setupForm(formulario) {
         element.classList.toggle('d-none', !isOnline);
         if (!isOnline) {
           element.querySelectorAll('input, textarea, select').forEach((input) => {
-            input.value = '';
+            if (input.type === 'radio' || input.type === 'checkbox') {
+              input.checked = false;
+            } else {
+              input.value = '';
+            }
             input.classList.remove('is-invalid');
           });
+          element.querySelectorAll('.rating-group').forEach((group) => group.classList.remove('is-invalid'));
         }
       });
     }
