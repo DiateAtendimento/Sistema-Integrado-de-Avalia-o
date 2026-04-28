@@ -60,7 +60,7 @@ a {
 
 .site-header-home {
   overflow: hidden;
-  padding: 5.5rem 0 4.5rem;
+  padding: 5.5rem 0 5.9rem;
   background:
     radial-gradient(circle at 18% 18%, rgba(86, 178, 214, 0.24), transparent 20rem),
     radial-gradient(circle at 82% 28%, rgba(33, 128, 211, 0.24), transparent 18rem),
@@ -169,7 +169,7 @@ a {
 .landing-shell {
   position: relative;
   z-index: 2;
-  margin-top: -3rem;
+  margin-top: -1.15rem;
   padding-bottom: 3.4rem;
 }
 
@@ -283,8 +283,8 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
   gap: 1.5rem;
-  align-items: end;
-  margin-bottom: 1.55rem;
+  align-items: start;
+  margin-bottom: 1.8rem;
 }
 
 .section-kicker {
@@ -1373,7 +1373,7 @@ pre {
   }
 
   .site-header-home {
-    padding: 4rem 0 3.6rem;
+    padding: 4rem 0 4.25rem;
   }
 
   .header-back-link {
@@ -1390,7 +1390,7 @@ pre {
   }
 
   .landing-shell {
-    margin-top: -2rem;
+    margin-top: -0.35rem;
     padding-bottom: 2rem;
   }
 
