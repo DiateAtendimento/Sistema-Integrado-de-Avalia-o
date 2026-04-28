@@ -9,5 +9,6 @@ router.get('/respostas', authMiddleware, adminController.getRespostas);
 router.get('/respostas/:id', authMiddleware, adminController.getRespostaById);
 router.get('/alertas', authMiddleware, adminController.getAlertas);
 router.get('/relatorios', authMiddleware, adminController.getRelatorios);
+router.get('/download-planilha', authMiddleware, adminController.downloadSpreadsheet);
 
 module.exports = router;

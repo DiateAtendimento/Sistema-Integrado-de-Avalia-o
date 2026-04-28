@@ -129,3 +129,15 @@ exports.getRelatorios = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.downloadSpreadsheet = async (req, res, next) => {
+  try {
+    const file = await googleSheetsService.exportSpreadsheetXlsx();
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="SIA-${date}.xlsx"`);
+    res.send(file);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -17,7 +17,7 @@
           <li class="nav-item"><a class="nav-link active" href="admin-dashboard.html">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="admin-respostas.html">Respostas</a></li>
           <li class="nav-item"><a class="nav-link" href="admin-alertas.html">Alertas</a></li>
-          <li class="nav-item"><a class="nav-link" href="admin-relatorios.html">Relatórios</a></li>
+          <li class="nav-item"><button id="download-planilha" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-download"></i>Baixar planilha</button></li>
           <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-box-arrow-right"></i>Sair</button></li>
         </ul>
       </div>
@@ -27,7 +27,7 @@
   <main class="container page-shell">
     <section class="page-title">
       <h1 class="h3">Dashboard</h1>
-      <p class="text-muted mb-0">Visão consolidada das avaliações recebidas, entidades mais recorrentes e dados de monitoramento.</p>
+      <p class="text-muted mb-0">Visão consolidada das avaliações recebidas e entidades mais recorrentes.</p>
     </section>
 
     <div class="row g-4" id="dashboard-cards"></div>
@@ -37,14 +37,6 @@
           <div class="card-body">
             <h2 class="card-title h5">Entidades com mais avaliações</h2>
             <ul id="top-entidades" class="list-group list-group-flush"></ul>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-body">
-            <h2 class="card-title h5">Resumo de consolidados</h2>
-            <pre id="consolidado-snapshot" class="small text-muted"></pre>
           </div>
         </div>
       </div>

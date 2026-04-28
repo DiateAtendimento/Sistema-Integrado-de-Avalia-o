@@ -1,11 +1,13 @@
 const { google } = require('googleapis');
 const config = require('../config');
 
+let authClient;
 let sheetsClient;
+let driveClient;
 
 function createAuth() {
-  if (sheetsClient) {
-    return sheetsClient;
+  if (authClient) {
+    return authClient;
   }
 
   let credentials;
@@ -17,15 +19,34 @@ function createAuth() {
 
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.readonly'
+    ]
   });
 
-  sheetsClient = google.sheets({ version: 'v4', auth });
+  authClient = auth;
+  return authClient;
+}
+
+function createSheetsClient() {
+  if (sheetsClient) {
+    return sheetsClient;
+  }
+  sheetsClient = google.sheets({ version: 'v4', auth: createAuth() });
   return sheetsClient;
 }
 
+function createDriveClient() {
+  if (driveClient) {
+    return driveClient;
+  }
+  driveClient = google.drive({ version: 'v3', auth: createAuth() });
+  return driveClient;
+}
+
 async function readSheet(sheetName) {
-  const sheets = createAuth();
+  const sheets = createSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: config.googleSheetId,
     range: `${sheetName}`
@@ -59,7 +80,7 @@ async function getHeaders(sheetName) {
 }
 
 async function appendRow(sheetName, values) {
-  const sheets = createAuth();
+  const sheets = createSheetsClient();
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: config.googleSheetId,
     range: sheetName,
@@ -68,6 +89,18 @@ async function appendRow(sheetName, values) {
     requestBody: { values: [values] }
   });
   return response.data;
+}
+
+async function exportSpreadsheetXlsx() {
+  const drive = createDriveClient();
+  const response = await drive.files.export(
+    {
+      fileId: config.googleSheetId,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    },
+    { responseType: 'arraybuffer' }
+  );
+  return Buffer.from(response.data);
 }
 
 function normalizeFormKey(value) {
@@ -124,6 +157,7 @@ module.exports = {
   getSheetObjects,
   getHeaders,
   appendRow,
+  exportSpreadsheetXlsx,
   getPerguntas,
   getCadastros,
   readSheet

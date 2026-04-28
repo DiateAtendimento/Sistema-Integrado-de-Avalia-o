@@ -30,6 +30,34 @@ function formatDetailLabel(key) {
     .trim();
 }
 
+async function downloadPlanilhaAdmin() {
+  if (!(await requireAuth())) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/download-planilha`, {
+      method: 'GET',
+      headers: {
+        ...getAdminHeaders()
+      }
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Não foi possível baixar a planilha.');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SIA-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    alert(error.message || 'Não foi possível baixar a planilha.');
+  }
+}
+
 async function requireAuth() {
   const token = getAuthToken();
   if (!token) {
@@ -63,7 +91,6 @@ async function loadDashboard() {
   if (!(await requireAuth())) return;
   const cardsContainer = document.getElementById('dashboard-cards');
   const topEntidadesList = document.getElementById('top-entidades');
-  const snapshot = document.getElementById('consolidado-snapshot');
 
   try {
     const data = await apiGet('/api/admin/dashboard', getAdminHeaders());
@@ -84,15 +111,6 @@ async function loadDashboard() {
     topEntidadesList.innerHTML = data.topEntidades.length
       ? data.topEntidades.map((item) => `<li class="list-group-item d-flex justify-content-between align-items-center">${item.entidade}<span class="badge bg-primary rounded-pill">${item.total}</span></li>`).join('')
       : '<li class="list-group-item text-muted">Nenhuma entidade registrada ainda.</li>';
-
-    const consolidado = [];
-    if (Array.isArray(data.consolidadoExame) && data.consolidadoExame.length) {
-      consolidado.push(`Exame: ${data.consolidadoExame.length} linhas`);
-    }
-    if (Array.isArray(data.consolidadoCcp) && data.consolidadoCcp.length) {
-      consolidado.push(`CCP/CAP: ${data.consolidadoCcp.length} linhas`);
-    }
-    snapshot.textContent = consolidado.length ? consolidado.join('\n') : 'Sem dados consolidados disponíveis.';
   } catch (error) {
     redirectToLogin();
   }
@@ -200,37 +218,15 @@ async function loadAlertas() {
   }
 }
 
-async function loadRelatorios() {
-  if (!(await requireAuth())) return;
-  const container = document.getElementById('report-summaries');
-  try {
-    const data = await apiGet('/api/admin/relatorios', getAdminHeaders());
-    container.innerHTML = '';
-    const sections = [
-      { title: 'Monitoramento Exame', rows: data.monitoramentoExame },
-      { title: 'Monitoramento CCP/CAP', rows: data.monitoramentoCcp }
-    ];
-    sections.forEach((section) => {
-      const card = document.createElement('div');
-      card.className = 'col-lg-6';
-      card.innerHTML = `
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">${section.title}</h5>
-            <p class="text-muted">${section.rows.length} linhas carregadas.</p>
-          </div>
-        </div>`;
-      container.appendChild(card);
-    });
-  } catch (error) {
-    redirectToLogin();
-  }
-}
-
 window.addEventListener('DOMContentLoaded', () => {
   const logoutButton = document.getElementById('logout-button');
   if (logoutButton) {
     logoutButton.addEventListener('click', redirectToLogin);
+  }
+
+  const downloadButton = document.getElementById('download-planilha');
+  if (downloadButton) {
+    downloadButton.addEventListener('click', downloadPlanilhaAdmin);
   }
 
   if (document.getElementById('login-form')) {
@@ -251,8 +247,5 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   if (document.getElementById('alertas-list')) {
     loadAlertas();
-  }
-  if (document.getElementById('report-summaries')) {
-    loadRelatorios();
   }
 });
