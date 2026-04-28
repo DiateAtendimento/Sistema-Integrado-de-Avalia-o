@@ -544,8 +544,14 @@ async function ensureQuestionMeta(type) {
 
   try {
     const formulario = type === 'exame' ? 'exame-provas' : 'ccp-cap';
-    const rows = await apiGet(`/api/perguntas/${formulario}`);
-    questionMetaCache[type] = rows || [];
+    const data = await apiGet(`/api/perguntas/${formulario}`);
+    if (Array.isArray(data)) {
+      questionMetaCache[type] = data;
+    } else if (Array.isArray(data?.perguntas)) {
+      questionMetaCache[type] = data.perguntas;
+    } else {
+      questionMetaCache[type] = [];
+    }
   } catch (error) {
     questionMetaCache[type] = [];
   }
@@ -577,10 +583,11 @@ function getBlockFallbackTitle(type, blockKey) {
 }
 
 function buildQuestionSections(item, type, metaRows) {
+  const safeMetaRows = Array.isArray(metaRows) ? metaRows : [];
   const renderedKeys = new Set();
   const blocks = new Map();
 
-  metaRows.forEach((meta, index) => {
+  safeMetaRows.forEach((meta, index) => {
     const code = meta.Codigo_Pergunta;
     if (!code || !Object.prototype.hasOwnProperty.call(item, code)) return;
 
