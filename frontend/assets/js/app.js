@@ -10,6 +10,32 @@ function parseOptions(rows) {
     .sort((a, b) => a.toString().localeCompare(b.toString(), 'pt-BR'));
 }
 
+function ensureFormState(stepsContainer, type, title, description, animationSrc) {
+  let state = document.getElementById(`form-state-${type}`);
+  if (state) return state;
+  state = document.createElement('div');
+  state.id = `form-state-${type}`;
+  state.className = 'form-state';
+  state.innerHTML = `
+    <div class="form-state-card">
+      <lottie-player src="${animationSrc}" background="transparent" speed="1" ${type === 'loading' ? 'loop autoplay' : ''}></lottie-player>
+      <h3>${title}</h3>
+      <p>${description}</p>
+    </div>
+  `;
+  stepsContainer.parentNode.insertBefore(state, stepsContainer);
+  return state;
+}
+
+function setFormState(stepsContainer, type) {
+  const loadingState = document.getElementById('form-state-loading');
+  const successState = document.getElementById('form-state-success');
+  [loadingState, successState].filter(Boolean).forEach((state) => state.classList.remove('active'));
+  stepsContainer.style.display = type ? 'none' : '';
+  if (type === 'loading' && loadingState) loadingState.classList.add('active');
+  if (type === 'success' && successState) successState.classList.add('active');
+}
+
 function createControlField(question, cadastroOptions) {
   const fieldName = question.Codigo_Pergunta || question.Nome_Bloco_Eixo || question.Grupo;
   const required = question.Obrigatoria && question.Obrigatoria.toString().toLowerCase() === 'sim';
@@ -54,7 +80,12 @@ function createControlField(question, cadastroOptions) {
       optionLabel.appendChild(helper);
       ratingGroup.appendChild(optionLabel);
     }
+
     fieldWrapper.appendChild(ratingGroup);
+    const note = document.createElement('div');
+    note.className = 'rating-scale-note';
+    note.textContent = '1 = discordo totalmente, 5 = concordo totalmente';
+    fieldWrapper.appendChild(note);
     return fieldWrapper;
   }
 
@@ -187,9 +218,7 @@ function validateStep(step) {
   });
 
   inputs.forEach((input) => {
-    if (input.type === 'radio') {
-      return;
-    }
+    if (input.type === 'radio') return;
     if (input.required && input.offsetParent !== null && !input.value.trim()) {
       input.classList.add('is-invalid');
       valid = false;
@@ -203,9 +232,7 @@ function validateStep(step) {
     const groupName = group.dataset.name;
     const isChecked = checkedRadioNames.has(groupName);
     group.classList.toggle('is-invalid', !isChecked);
-    if (!isChecked) {
-      valid = false;
-    }
+    if (!isChecked) valid = false;
   });
 
   return valid;
@@ -220,9 +247,7 @@ function toggleConditionalFields(step, blockKey) {
     const inner = field.querySelector('textarea, input');
     if (inner) {
       inner.required = shouldShow;
-      if (!shouldShow) {
-        inner.value = '';
-      }
+      if (!shouldShow) inner.value = '';
     }
   });
 }
@@ -249,6 +274,22 @@ async function setupForm(formulario) {
   if (!form || !stepsContainer) return;
 
   try {
+    ensureFormState(
+      stepsContainer,
+      'loading',
+      'Carregando formulário',
+      'Estamos preparando as perguntas para você.',
+      'https://assets5.lottiefiles.com/packages/lf20_usmfx6bp.json'
+    );
+    ensureFormState(
+      stepsContainer,
+      'success',
+      'Avaliação enviada',
+      'Sua resposta foi registrada com sucesso.',
+      'https://assets3.lottiefiles.com/packages/lf20_jbrw3hcz.json'
+    );
+    setFormState(stepsContainer, 'loading');
+
     const [definition, cadastros] = await Promise.all([
       apiGet(`/api/perguntas/${formulario}`),
       apiGet('/api/cadastros')
@@ -257,14 +298,11 @@ async function setupForm(formulario) {
     const cadastroOptions = buildCadastroOptions(cadastros);
     const questions = definition.perguntas || [];
     if (!questions.length) {
-      showMessage(
-        messageContainer,
-        'Nenhuma pergunta foi encontrada para este formulário. Verifique o cadastro em DICIONARIO_PERGUNTAS.',
-        'warning'
-      );
+      showMessage(messageContainer, 'Nenhuma pergunta foi encontrada para este formulário. Verifique o cadastro em DICIONARIO_PERGUNTAS.', 'warning');
       nextButton.disabled = true;
       prevButton.disabled = true;
       submitButton.disabled = true;
+      setFormState(stepsContainer, null);
       return;
     }
 
@@ -278,6 +316,7 @@ async function setupForm(formulario) {
       stepsContainer.appendChild(stepElement);
     });
     resetConditionalFields(stepsContainer);
+    setFormState(stepsContainer, null);
 
     let currentStep = 0;
     const stepElements = Array.from(stepsContainer.querySelectorAll('.form-step'));
@@ -319,9 +358,7 @@ async function setupForm(formulario) {
 
       const safeIndex = Math.max(0, Math.min(index, totalSteps - 1));
       currentStep = safeIndex;
-      stepElements.forEach((element) => {
-        element.classList.remove('active');
-      });
+      stepElements.forEach((element) => element.classList.remove('active'));
       visibleSteps[safeIndex].classList.add('active');
       prevButton.style.display = safeIndex === 0 ? 'none' : 'inline-block';
       nextButton.style.display = safeIndex === totalSteps - 1 ? 'none' : 'inline-block';
@@ -383,6 +420,11 @@ async function setupForm(formulario) {
         currentStep = 0;
         syncConditionalSteps();
         showStep(currentStep);
+        setFormState(stepsContainer, 'success');
+        window.setTimeout(() => {
+          setFormState(stepsContainer, null);
+          showStep(0);
+        }, 2200);
       } catch (error) {
         showMessage(messageContainer, error.message || 'Não foi possível enviar a avaliação.', 'danger');
       }
@@ -392,6 +434,7 @@ async function setupForm(formulario) {
     showStep(currentStep);
   } catch (error) {
     const container = document.getElementById('form-message');
+    setFormState(stepsContainer, null);
     showMessage(container, error.message || 'Não foi possível carregar o formulário.', 'danger');
   }
 }
