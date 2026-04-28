@@ -107,6 +107,24 @@ function createDetailCard(item) {
     .join('');
 }
 
+function buildDetailMarkup(item) {
+  return `
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <h5 class="mb-3">Detalhes da resposta</h5>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeRespostaDetalhe()" aria-label="Fechar detalhes">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <dl class="row mb-0">${createDetailCard(item)}</dl>
+    </div>
+  `;
+}
+
+function closeRespostaDetalhe() {
+  document.getElementById('resposta-detalhe')?.remove();
+}
+
 async function loadRespostas() {
   if (!(await requireAuth())) return;
   const tableExame = document.getElementById('table-exame');
@@ -146,9 +164,9 @@ async function showRespostaDetalhe(id) {
       container.id = 'resposta-detalhe';
       container.className = 'mt-4 card detail-card';
       document.querySelector('main.container')?.appendChild(container);
-      container.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
+      container.innerHTML = buildDetailMarkup(result.resposta);
     } else {
-      detailArea.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
+      detailArea.innerHTML = buildDetailMarkup(result.resposta);
     }
     document.getElementById('resposta-detalhe')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
