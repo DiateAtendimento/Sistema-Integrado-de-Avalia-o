@@ -8,6 +8,28 @@ function redirectToLogin() {
   window.location.href = 'admin-login.html';
 }
 
+function formatAdminDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  return value;
+}
+
+function formatDetailLabel(key) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+}
+
 async function requireAuth() {
   const token = getAuthToken();
   if (!token) {
@@ -65,10 +87,10 @@ async function loadDashboard() {
 
     const consolidado = [];
     if (Array.isArray(data.consolidadoExame) && data.consolidadoExame.length) {
-      consolidado.push('Exame: ' + data.consolidadoExame.length + ' linhas');
+      consolidado.push(`Exame: ${data.consolidadoExame.length} linhas`);
     }
     if (Array.isArray(data.consolidadoCcp) && data.consolidadoCcp.length) {
-      consolidado.push('CCP/CAP: ' + data.consolidadoCcp.length + ' linhas');
+      consolidado.push(`CCP/CAP: ${data.consolidadoCcp.length} linhas`);
     }
     snapshot.textContent = consolidado.length ? consolidado.join('\n') : 'Sem dados consolidados disponíveis.';
   } catch (error) {
@@ -78,7 +100,10 @@ async function loadDashboard() {
 
 function createDetailCard(item) {
   return Object.entries(item)
-    .map(([key, value]) => `<dt class="col-sm-4">${key}</dt><dd class="col-sm-8">${value || '-'}</dd>`)
+    .map(([key, value]) => {
+      const formattedValue = key.toLowerCase().includes('data') ? formatAdminDate(value) : (value || '-');
+      return `<dt class="col-sm-4">${formatDetailLabel(key)}</dt><dd class="col-sm-8">${formattedValue}</dd>`;
+    })
     .join('');
 }
 
@@ -90,18 +115,16 @@ async function loadRespostas() {
   try {
     const data = await apiGet('/api/admin/respostas', getAdminHeaders());
     const exameColumns = [
-      { label: 'ID', key: 'ID_Avaliacao' },
       { label: 'Entidade', key: 'Entidade_Certificadora' },
       { label: 'Certificação', key: 'Tipo_Certificacao' },
-      { label: 'Data', key: 'Data_Recebimento' },
+      { label: 'Data', value: (item) => formatAdminDate(item.Data_Recebimento) },
       { label: 'Média', key: 'Media_Geral_Exame' },
       { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')"><i class="bi bi-eye"></i>Ver</button>` }
     ];
     const ccpColumns = [
-      { label: 'ID', key: 'ID_Avaliacao' },
       { label: 'Entidade', key: 'Entidade_Certificadora' },
       { label: 'Modalidade', key: 'Modalidade_CCP_CAP' },
-      { label: 'Data', key: 'Data_Recebimento' },
+      { label: 'Data', value: (item) => formatAdminDate(item.Data_Recebimento) },
       { label: 'Nota Global', key: 'Nota_Global_Ponderada' },
       { label: 'Ação', value: (item) => `<button class="btn btn-sm btn-outline-primary" onclick="showRespostaDetalhe('${item.ID_Avaliacao}')"><i class="bi bi-eye"></i>Ver</button>` }
     ];
@@ -122,11 +145,12 @@ async function showRespostaDetalhe(id) {
       const container = document.createElement('div');
       container.id = 'resposta-detalhe';
       container.className = 'mt-4 card detail-card';
-      document.querySelector('main .container')?.appendChild(container);
+      document.querySelector('main.container')?.appendChild(container);
       container.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
     } else {
       detailArea.innerHTML = `<div class="card-body"><h5>Detalhes da resposta</h5><dl class="row">${createDetailCard(result.resposta)}</dl></div>`;
     }
+    document.getElementById('resposta-detalhe')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     alert(error.message || 'Não foi possível carregar o detalhe da resposta.');
   }

@@ -1,5 +1,4 @@
 const googleSheetsService = require('../services/googleSheetsService');
-const { v4: uuidv4 } = require('uuid');
 
 function parseNumber(value) {
   const number = Number(value);
@@ -25,6 +24,22 @@ function flattenObject(payload) {
     acc[key] = value;
     return acc;
   }, {});
+}
+
+async function generateFriendlyId(sheetName, type) {
+  const rows = await googleSheetsService.getSheetObjects(sheetName);
+  const year = new Date().getFullYear();
+  const prefix = type === 'exame' ? `EPP-${year}-E` : `CCPCAP-${year}-C`;
+  const regex = new RegExp(`^${prefix}(\\d{5})$`);
+
+  const maxSequence = rows.reduce((max, item) => {
+    const currentId = item.ID_Avaliacao || '';
+    const match = currentId.match(regex);
+    if (!match) return max;
+    return Math.max(max, Number(match[1]));
+  }, 0);
+
+  return `${prefix}${String(maxSequence + 1).padStart(5, '0')}`;
 }
 
 exports.getCadastros = async (req, res, next) => {
@@ -56,7 +71,7 @@ exports.postRespostaExame = async (req, res, next) => {
     }
 
     const headers = await googleSheetsService.getHeaders('BASE_EXAME_PROVAS');
-    const id = `EX-${uuidv4()}`;
+    const id = await generateFriendlyId('BASE_EXAME_PROVAS', 'exame');
     const timestamp = new Date().toISOString();
     const blocoKeys = headers.filter((key) => key.startsWith('B') && key.includes('.'));
     const blocoValues = blocoKeys.map((key) => data[key] || '');
@@ -89,7 +104,7 @@ exports.postRespostaCcpCap = async (req, res, next) => {
     }
 
     const headers = await googleSheetsService.getHeaders('BASE_CCP_CAP');
-    const id = `CCP-${uuidv4()}`;
+    const id = await generateFriendlyId('BASE_CCP_CAP', 'ccp');
     const timestamp = new Date().toISOString();
 
     const eixo1Keys = headers.filter((key) => key.startsWith('E1_'));
