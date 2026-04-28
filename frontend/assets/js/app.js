@@ -15,12 +15,15 @@ function ensureFormState(stepsContainer, type, title, description, animationSrc)
   if (state) return state;
   state = document.createElement('div');
   state.id = `form-state-${type}`;
-  state.className = 'form-state';
+  state.className = `form-state form-state-${type}`;
   state.innerHTML = `
     <div class="form-state-card">
       <lottie-player src="${animationSrc}" background="transparent" speed="1" ${type === 'loading' ? 'loop autoplay' : ''}></lottie-player>
-      <h3>${title}</h3>
-      <p>${description}</p>
+      <div class="form-state-copy">
+        <div class="form-state-kicker">${type === 'loading' ? 'Preparando' : 'Concluído'}</div>
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
     </div>
   `;
   stepsContainer.parentNode.insertBefore(state, stepsContainer);
