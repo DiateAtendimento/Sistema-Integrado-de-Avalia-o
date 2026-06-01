@@ -1,4 +1,4 @@
-let respostasState = {
+const respostasState = {
   exame: [],
   ccp: [],
   filters: {
@@ -11,6 +11,44 @@ const questionMetaCache = {
   exame: null,
   ccp: null
 };
+
+let analyticsCache = null;
+
+const COMMENT_CATEGORY_RULES = [
+  {
+    key: 'comunicacao',
+    label: 'Comunicação e orientação',
+    keywords: ['comunica', 'orienta', 'clareza', 'inform', 'regra', 'edital', 'cronograma', 'anteced']
+  },
+  {
+    key: 'infraestrutura',
+    label: 'Infraestrutura e suporte',
+    keywords: ['infraestrutura', 'ambiente', 'sala', 'equip', 'sistema', 'tecnic', 'conect', 'suporte', 'camera']
+  },
+  {
+    key: 'avaliacao',
+    label: 'Avaliação e processo',
+    keywords: ['avali', 'processo', 'criter', 'fiscal', 'integridade', 'prova', 'aprendizagem', 'feedback']
+  },
+  {
+    key: 'conteudo',
+    label: 'Conteúdo e adequação',
+    keywords: ['conteudo', 'conteúdo', 'quest', 'curric', 'didat', 'pedagog', 'docente', 'material']
+  },
+  {
+    key: 'participacao',
+    label: 'Participação e frequência',
+    keywords: ['frequ', 'particip', 'presen', 'controle', 'assinatura']
+  },
+  {
+    key: 'acesso',
+    label: 'Acesso e preço',
+    keywords: ['acesso', 'preco', 'preço', 'custo', 'valor', 'inscri', 'disponib']
+  }
+];
+
+const NEGATIVE_WORDS = ['ruim', 'péss', 'pess', 'insatis', 'falha', 'erro', 'proble', 'precisa', 'demora', 'dific', 'inadequ', 'crit', 'deficien', 'ausencia'];
+const POSITIVE_WORDS = ['bom', 'ótim', 'otim', 'excel', 'adequad', 'satis', 'positivo', 'eficient', 'claro', 'consistente'];
 
 function getAdminHeaders() {
   const token = getAuthToken();
@@ -31,6 +69,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function normalizeText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 function formatAdminDate(value) {
   if (!value) return '-';
   const date = new Date(value);
@@ -44,6 +89,13 @@ function formatAdminDate(value) {
     });
   }
   return value;
+}
+
+function formatShortDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('pt-BR');
 }
 
 function parseLocalDateInput(value, endOfDay = false) {
@@ -68,20 +120,57 @@ function formatDetailLabel(key) {
     .trim();
 }
 
-function normalizeStatusLabel(status) {
-  return status
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function formatNumericValue(value) {
+function formatNumericValue(value, digits = 2) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return value || '-';
   return numeric.toLocaleString('pt-BR', {
     minimumFractionDigits: 1,
-    maximumFractionDigits: 2
+    maximumFractionDigits: digits
   });
+}
+
+function formatPercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '-';
+  return `${numeric.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`;
+}
+
+function median(values) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
+}
+
+function stdDev(values, avg) {
+  if (!values.length) return 0;
+  const variance = values.reduce((acc, value) => acc + ((value - avg) ** 2), 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+function summarizeNumbers(values) {
+  const numeric = values.map(Number).filter((value) => Number.isFinite(value));
+  if (!numeric.length) {
+    return {
+      count: 0,
+      average: 0,
+      median: 0,
+      stddev: 0,
+      min: 0,
+      max: 0
+    };
+  }
+  const average = numeric.reduce((acc, value) => acc + value, 0) / numeric.length;
+  return {
+    count: numeric.length,
+    average,
+    median: median(numeric),
+    stddev: stdDev(numeric, average),
+    min: Math.min(...numeric),
+    max: Math.max(...numeric)
+  };
 }
 
 function getResponseType(item) {
@@ -122,6 +211,11 @@ function getRowClassification(item, type) {
   return { label: 'Destaque', className: 'destaque' };
 }
 
+function renderStatusBadge(item, type) {
+  const status = getRowClassification(item, type);
+  return `<span class="status-badge ${status.className}">${status.label}</span>`;
+}
+
 async function requireAuth() {
   const token = getAuthToken();
   if (!token) {
@@ -153,60 +247,491 @@ async function handleLogin() {
   });
 }
 
+async function fetchAdminResponses() {
+  const data = await apiGet('/api/admin/respostas', getAdminHeaders());
+  respostasState.exame = data.exame || [];
+  respostasState.ccp = data.ccp || [];
+  return respostasState;
+}
+
+async function ensureQuestionMeta(type) {
+  if (questionMetaCache[type]) return questionMetaCache[type];
+
+  try {
+    const formulario = type === 'exame' ? 'exame-provas' : 'ccp-cap';
+    const data = await apiGet(`/api/perguntas/${formulario}`);
+    questionMetaCache[type] = Array.isArray(data?.perguntas) ? data.perguntas : [];
+  } catch (error) {
+    questionMetaCache[type] = [];
+  }
+
+  return questionMetaCache[type];
+}
+
+function buildMetaMap(metaRows) {
+  return (metaRows || []).reduce((acc, row) => {
+    if (row.Codigo_Pergunta) acc[row.Codigo_Pergunta] = row;
+    return acc;
+  }, {});
+}
+
+function getScoreEntries(item) {
+  return Object.entries(item)
+    .filter(([key, value]) => (key.startsWith('B') || key.startsWith('E')) && Number.isFinite(Number(value)))
+    .map(([key, value]) => ({ key, value: Number(value) }));
+}
+
+function getCommentEntries(item, type) {
+  const commentFields = Object.entries(item)
+    .filter(([key, value]) => {
+      if (!value) return false;
+      return key.startsWith('Justificativa') || key === 'Avaliacao_Geral_Texto' || key === 'Observacoes_Finais';
+    })
+    .map(([key, value]) => ({
+      key,
+      value: String(value).trim(),
+      type,
+      entity: item.Entidade_Certificadora || 'Não informada',
+      id: item.ID_Avaliacao || '-'
+    }))
+    .filter((entry) => entry.value);
+
+  return commentFields;
+}
+
+function detectSentiment(text) {
+  const normalized = normalizeText(text);
+  const negativeScore = NEGATIVE_WORDS.reduce((acc, word) => acc + (normalized.includes(word) ? 1 : 0), 0);
+  const positiveScore = POSITIVE_WORDS.reduce((acc, word) => acc + (normalized.includes(word) ? 1 : 0), 0);
+  if (negativeScore > positiveScore) return 'Negativo';
+  if (positiveScore > negativeScore) return 'Positivo';
+  return 'Neutro';
+}
+
+function detectCommentCategory(text) {
+  const normalized = normalizeText(text);
+  const matched = COMMENT_CATEGORY_RULES.find((rule) => rule.keywords.some((keyword) => normalized.includes(keyword)));
+  return matched ? matched.label : 'Qualidade geral';
+}
+
+function collectComments(rows, type) {
+  return rows.flatMap((item) => getCommentEntries(item, type)).map((entry) => ({
+    ...entry,
+    sentiment: detectSentiment(entry.value),
+    category: detectCommentCategory(entry.value)
+  }));
+}
+
+function aggregateBy(rows, getLabel, getValue) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const label = getLabel(row) || 'Não informado';
+    const value = Number(getValue(row));
+    if (!Number.isFinite(value)) return;
+    if (!map.has(label)) map.set(label, []);
+    map.get(label).push(value);
+  });
+  return [...map.entries()]
+    .map(([label, values]) => {
+      const stats = summarizeNumbers(values);
+      return {
+        label,
+        count: stats.count,
+        average: stats.average,
+        median: stats.median,
+        stddev: stats.stddev,
+        min: stats.min,
+        max: stats.max
+      };
+    })
+    .sort((a, b) => b.average - a.average);
+}
+
+function aggregateCommentsBy(entries, key) {
+  const map = new Map();
+  entries.forEach((entry) => {
+    const label = entry[key] || 'Não informado';
+    if (!map.has(label)) map.set(label, []);
+    map.get(label).push(entry);
+  });
+  return [...map.entries()]
+    .map(([label, items]) => ({ label, count: items.length, items }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function deriveBlockStats(rows, metaRows) {
+  const metaMap = buildMetaMap(metaRows);
+  const blockMap = new Map();
+
+  rows.forEach((item) => {
+    getScoreEntries(item).forEach((entry) => {
+      const meta = metaMap[entry.key] || {};
+      const blockName = meta.Nome_Bloco_Eixo || meta.Bloco_Eixo || entry.key.split('_')[0];
+      if (!blockMap.has(blockName)) blockMap.set(blockName, []);
+      blockMap.get(blockName).push(entry.value);
+    });
+  });
+
+  return [...blockMap.entries()]
+    .map(([label, values]) => {
+      const stats = summarizeNumbers(values);
+      return {
+        label,
+        count: stats.count,
+        average: stats.average,
+        median: stats.median,
+        stddev: stats.stddev
+      };
+    })
+    .sort((a, b) => a.average - b.average);
+}
+
+function collectTimeline(rows) {
+  const dates = rows
+    .map((item) => parseResponseDate(item.Data_Recebimento))
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+  return {
+    start: dates[0] || null,
+    end: dates[dates.length - 1] || null
+  };
+}
+
+function summarizeType(rows, type, metaRows) {
+  const averages = rows
+    .map((item) => getRowAverage(item, type))
+    .filter((value) => Number.isFinite(value));
+  const stats = summarizeNumbers(averages);
+  const comments = collectComments(rows, type);
+  const sentiments = aggregateCommentsBy(comments, 'sentiment');
+  const categories = aggregateCommentsBy(comments, 'category');
+  const classifications = rows.reduce((acc, row) => {
+    const label = getRowClassification(row, type).label;
+    acc[label] = (acc[label] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    type,
+    rows,
+    count: rows.length,
+    stats,
+    comments,
+    sentiments,
+    categories,
+    classifications,
+    byEntity: aggregateBy(rows, (item) => item.Entidade_Certificadora, (item) => getRowAverage(item, type)),
+    byLevel: type === 'exame'
+      ? aggregateBy(rows, (item) => item.Nivel_Certificacao || 'Não informado', (item) => getRowAverage(item, type))
+      : [],
+    byModality: type === 'exame'
+      ? aggregateBy(rows, (item) => item.Modalidade_Prova || 'Não informada', (item) => getRowAverage(item, type))
+      : aggregateBy(rows, (item) => item.Modalidade_CCP_CAP || 'Não informada', (item) => getRowAverage(item, type)),
+    byBlock: deriveBlockStats(rows, metaRows)
+  };
+}
+
+function compareTypes(exame, ccp) {
+  return [
+    { label: 'Exame por Provas', average: exame.stats.average, count: exame.count },
+    { label: 'CCP/CAP', average: ccp.stats.average, count: ccp.count }
+  ];
+}
+
+function buildCriticalPoints(exame, ccp) {
+  const points = [];
+  const examWorstEntity = exame.byEntity[exame.byEntity.length - 1];
+  const ccpWorstEntity = ccp.byEntity[ccp.byEntity.length - 1];
+  const worstExamBlock = exame.byBlock[0];
+  const worstCcpBlock = ccp.byBlock[0];
+  const worstCategory = [...exame.categories, ...ccp.categories]
+    .sort((a, b) => b.count - a.count)[0];
+
+  if (ccpWorstEntity) {
+    points.push({
+      level: 'Crítico',
+      title: `${ccpWorstEntity.label} em CCP/CAP`,
+      detail: `Média ${formatNumericValue(ccpWorstEntity.average)} em ${ccpWorstEntity.count} resposta(s), com variabilidade ${formatNumericValue(ccpWorstEntity.stddev)}.`
+    });
+  }
+
+  if (examWorstEntity) {
+    points.push({
+      level: 'Crítico',
+      title: `${examWorstEntity.label} em Exame por Provas`,
+      detail: `Média ${formatNumericValue(examWorstEntity.average)} em ${examWorstEntity.count} resposta(s), indicando necessidade de diagnóstico operacional.`
+    });
+  }
+
+  if (worstExamBlock) {
+    points.push({
+      level: 'Atenção',
+      title: `Bloco mais sensível do Exame: ${worstExamBlock.label}`,
+      detail: `Média ${formatNumericValue(worstExamBlock.average)} com ${worstExamBlock.count} marcações.`
+    });
+  }
+
+  if (worstCcpBlock) {
+    points.push({
+      level: 'Atenção',
+      title: `Bloco mais sensível do CCP/CAP: ${worstCcpBlock.label}`,
+      detail: `Média ${formatNumericValue(worstCcpBlock.average)} com ${worstCcpBlock.count} marcações.`
+    });
+  }
+
+  if (worstCategory) {
+    points.push({
+      level: 'Monitoramento',
+      title: `Tema recorrente: ${worstCategory.label}`,
+      detail: `${worstCategory.count} comentário(s) associados a esse eixo qualitativo.`
+    });
+  }
+
+  return points;
+}
+
+function buildRecommendations(criticalPoints) {
+  return criticalPoints.slice(0, 5).map((point, index) => {
+    if (point.title.includes('CCP/CAP')) {
+      return {
+        code: `R${index + 1}`,
+        title: 'Revisão pedagógica e administrativa do CCP/CAP',
+        detail: 'Auditar critérios de avaliação, comunicação prévia e desenho operacional do curso nas entidades com pior desempenho.'
+      };
+    }
+    if (point.title.includes('Exame')) {
+      return {
+        code: `R${index + 1}`,
+        title: 'Diagnóstico operacional do Exame por Provas',
+        detail: 'Priorizar infraestrutura, clareza das orientações e consistência da experiência entre entidades.'
+      };
+    }
+    if (point.title.includes('Tema recorrente')) {
+      return {
+        code: `R${index + 1}`,
+        title: 'Plano de ação sobre comentários recorrentes',
+        detail: 'Transformar os temas qualitativos mais frequentes em checklist de melhoria com responsáveis e prazo.'
+      };
+    }
+    return {
+      code: `R${index + 1}`,
+      title: 'Monitoramento contínuo por bloco temático',
+      detail: 'Usar indicadores por bloco/eixo para reavaliar os pontos com menor média e acompanhar a evolução semestral.'
+    };
+  });
+}
+
+function buildExecutiveSummary(analytics) {
+  const { exame, ccp } = analytics;
+  const comparisonGap = ccp.stats.average - exame.stats.average;
+  const totalComments = exame.comments.length + ccp.comments.length;
+  const negativeComments = [...exame.comments, ...ccp.comments].filter((item) => item.sentiment === 'Negativo').length;
+  const criticalCount = Object.values(exame.classifications).reduce((acc, count) => acc + count, 0)
+    ? (exame.classifications.Crítico || 0) + (ccp.classifications.Crítico || 0)
+    : 0;
+
+  return [
+    `Esta análise consolida ${analytics.totalResponses} resposta(s) entre Exame por Provas e CCP/CAP, coletadas de ${analytics.periodLabel}.`,
+    `No recorte quantitativo, o Exame apresenta média geral de ${formatNumericValue(exame.stats.average)} e o CCP/CAP registra ${formatNumericValue(ccp.stats.average)}, com diferença de ${formatNumericValue(Math.abs(comparisonGap))} ponto(s) entre os dois instrumentos.`,
+    `O sistema identificou ${criticalCount} resposta(s) em faixa crítica e ${totalComments} comentário(s) abertos, dos quais ${negativeComments} foram lidos como predominantemente negativos pela classificação automática de sentimento.`,
+    'Os dados indicam percepção mais favorável nos eixos de integridade e satisfação geral, enquanto comunicação, infraestrutura, avaliação e clareza operacional concentram os principais sinais de atenção.'
+  ];
+}
+
+function buildConclusions(analytics) {
+  const topExam = analytics.exame.byEntity[0];
+  const topCcp = analytics.ccp.byEntity[0];
+  const bottomExam = analytics.exame.byEntity[analytics.exame.byEntity.length - 1];
+  const bottomCcp = analytics.ccp.byEntity[analytics.ccp.byEntity.length - 1];
+
+  return [
+    `O panorama atual é de qualidade moderada, com melhor percepção média em CCP/CAP (${formatNumericValue(analytics.ccp.stats.average)}) do que no Exame por Provas (${formatNumericValue(analytics.exame.stats.average)}).`,
+    topExam && topCcp
+      ? `Entre os destaques positivos, ${topExam.label} lidera no Exame e ${topCcp.label} lidera no CCP/CAP.`
+      : 'Os melhores resultados concentram-se em poucas entidades, sugerindo oportunidade clara de transferência de boas práticas.',
+    bottomExam && bottomCcp
+      ? `Os menores desempenhos ficaram com ${bottomExam.label} no Exame e ${bottomCcp.label} no CCP/CAP, ambos exigindo ação estruturada.`
+      : 'Os menores desempenhos exigem priorização gerencial e revisão de processos operacionais e pedagógicos.',
+    'A recomendação central é tratar o relatório como instrumento contínuo de gestão, com revisão periódica dos indicadores, leitura sistemática dos comentários e comparação entre entidades.'
+  ];
+}
+
+function createAnalytics(exameRows, ccpRows, metaExame, metaCcp) {
+  const exame = summarizeType(exameRows, 'exame', metaExame);
+  const ccp = summarizeType(ccpRows, 'ccp', metaCcp);
+  const timeline = collectTimeline([...exameRows, ...ccpRows]);
+  const criticalPoints = buildCriticalPoints(exame, ccp);
+  const recommendations = buildRecommendations(criticalPoints);
+
+  return {
+    exame,
+    ccp,
+    comparison: compareTypes(exame, ccp),
+    criticalPoints,
+    recommendations,
+    totalResponses: exame.count + ccp.count,
+    period: timeline,
+    periodLabel: timeline.start && timeline.end
+      ? `${formatShortDate(timeline.start)} a ${formatShortDate(timeline.end)}`
+      : 'período indisponível',
+    executiveSummary: buildExecutiveSummary({
+      exame,
+      ccp,
+      totalResponses: exame.count + ccp.count,
+      periodLabel: timeline.start && timeline.end
+        ? `${formatShortDate(timeline.start)} a ${formatShortDate(timeline.end)}`
+        : 'período indisponível'
+    }),
+    conclusions: buildConclusions({ exame, ccp })
+  };
+}
+
+async function loadAnalytics() {
+  if (analyticsCache) return analyticsCache;
+  await fetchAdminResponses();
+  const [metaExame, metaCcp] = await Promise.all([
+    ensureQuestionMeta('exame'),
+    ensureQuestionMeta('ccp')
+  ]);
+  analyticsCache = createAnalytics(respostasState.exame, respostasState.ccp, metaExame, metaCcp);
+  return analyticsCache;
+}
+
+function createMetricCards(container, metrics) {
+  if (!container) return;
+  container.innerHTML = metrics.map((metric) => `
+    <div class="col-md-6 col-xl-3">
+      <div class="card metric-card h-100">
+        <div class="card-body">
+          <h6 class="text-muted">${escapeHtml(metric.title)}</h6>
+          <h3 class="mt-3 mb-2">${escapeHtml(metric.value)}</h3>
+          <p class="metric-card-note mb-0">${escapeHtml(metric.note || '')}</p>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTrendBars(items, formatter = (value) => formatNumericValue(value)) {
+  if (!items.length) {
+    return '<p class="text-muted mb-0">Sem dados suficientes para visualização.</p>';
+  }
+  const max = Math.max(...items.map((item) => Number(item.value) || 0), 1);
+  return items.map((item) => `
+    <div class="insight-bar-row">
+      <div class="insight-bar-head">
+        <span>${escapeHtml(item.label)}</span>
+        <strong>${escapeHtml(formatter(item.value))}</strong>
+      </div>
+      <div class="insight-bar-track">
+        <span class="insight-bar-fill" style="width:${Math.max(8, (Number(item.value) / max) * 100)}%"></span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderChartCard(title, description, items, formatter) {
+  return `
+    <article class="chart-card">
+      <div class="chart-card-head">
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(description)}</p>
+      </div>
+      <div class="chart-card-body">
+        ${renderTrendBars(items, formatter)}
+      </div>
+    </article>
+  `;
+}
+
+function renderListGroup(container, items, renderer) {
+  if (!container) return;
+  container.innerHTML = items.length ? items.map(renderer).join('') : '<p class="text-muted mb-0">Nenhum dado disponível.</p>';
+}
+
+function buildDashboardSummary(analytics) {
+  const examWorst = analytics.exame.byEntity[analytics.exame.byEntity.length - 1];
+  const ccpWorst = analytics.ccp.byEntity[analytics.ccp.byEntity.length - 1];
+  return `
+    <p>O painel consolida ${analytics.totalResponses} resposta(s) de ${analytics.periodLabel}. O Exame por Provas registrou média ${formatNumericValue(analytics.exame.stats.average)} e o CCP/CAP alcançou ${formatNumericValue(analytics.ccp.stats.average)}.</p>
+    <p>Os principais focos de atenção recaem sobre ${escapeHtml(examWorst?.label || 'entidades com menor média no Exame')} e ${escapeHtml(ccpWorst?.label || 'entidades com menor média no CCP/CAP')}, além de comentários recorrentes sobre comunicação, avaliação e infraestrutura.</p>
+  `;
+}
+
 async function loadDashboard() {
   if (!(await requireAuth())) return;
 
-  const cardsContainer = document.getElementById('dashboard-cards');
-  const topEntidadesList = document.getElementById('top-entidades');
-
   try {
-    const data = await apiGet('/api/admin/dashboard', getAdminHeaders());
-    cardsContainer.innerHTML = '';
+    const analytics = await loadAnalytics();
+    createMetricCards(document.getElementById('dashboard-cards'), [
+      { title: 'Avaliações totais', value: String(analytics.totalResponses), note: analytics.periodLabel },
+      { title: 'Média Exame', value: formatNumericValue(analytics.exame.stats.average), note: `${analytics.exame.count} resposta(s)` },
+      { title: 'Média CCP/CAP', value: formatNumericValue(analytics.ccp.stats.average), note: `${analytics.ccp.count} resposta(s)` },
+      { title: 'Respostas críticas', value: String((analytics.exame.classifications.Crítico || 0) + (analytics.ccp.classifications.Crítico || 0)), note: 'faixa crítica consolidada' }
+    ]);
 
-    const metrics = [
-      { title: 'Avaliações totais', value: data.totalAvaliacoes },
-      { title: 'Exames cadastrados', value: data.exameCount },
-      { title: 'CCP/CAP cadastrados', value: data.ccpCount },
-      { title: 'Respostas críticas', value: data.criticaCount }
-    ];
+    const topEntidades = [...analytics.exame.byEntity, ...analytics.ccp.byEntity]
+      .reduce((acc, item) => {
+        const current = acc.get(item.label) || { label: item.label, count: 0, weightedAverage: 0 };
+        current.count += item.count;
+        current.weightedAverage += item.average * item.count;
+        acc.set(item.label, current);
+        return acc;
+      }, new Map());
 
-    metrics.forEach((metric) => {
-      const card = document.createElement('div');
-      card.className = 'col-md-6 col-xl-3';
-      card.innerHTML = `
-        <div class="card metric-card">
-          <div class="card-body">
-            <h6 class="text-muted">${metric.title}</h6>
-            <h3 class="mt-3 mb-0">${metric.value}</h3>
+    renderListGroup(
+      document.getElementById('top-entidades'),
+      [...topEntidades.values()].sort((a, b) => b.count - a.count).slice(0, 5),
+      (item) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${escapeHtml(item.label)}</strong>
+            <div class="text-muted small">média consolidada ${formatNumericValue(item.weightedAverage / item.count)}</div>
           </div>
-        </div>
-      `;
-      cardsContainer.appendChild(card);
-    });
+          <span class="badge bg-primary rounded-pill">${item.count}</span>
+        </li>
+      `
+    );
 
-    topEntidadesList.innerHTML = data.topEntidades.length
-      ? data.topEntidades.map((item) => `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            ${item.entidade}
-            <span class="badge bg-primary rounded-pill">${item.total}</span>
-          </li>
-        `).join('')
-      : '<li class="list-group-item text-muted">Nenhuma entidade registrada ainda.</li>';
+    const summary = document.getElementById('dashboard-summary');
+    if (summary) summary.innerHTML = buildDashboardSummary(analytics);
+
+    const charts = document.getElementById('dashboard-charts');
+    if (charts) {
+      charts.innerHTML = [
+        renderChartCard(
+          'Média por entidade no Exame',
+          'Comparativo das entidades certificadoras no Exame por Provas.',
+          analytics.exame.byEntity.slice(0, 4).map((item) => ({ label: item.label, value: item.average }))
+        ),
+        renderChartCard(
+          'Média por modalidade no CCP/CAP',
+          'Diferença de percepção entre modalidades de curso.',
+          analytics.ccp.byModality.slice(0, 4).map((item) => ({ label: item.label, value: item.average }))
+        ),
+        renderChartCard(
+          'Classificação consolidada',
+          'Distribuição de respostas por faixa de criticidade.',
+          [
+            { label: 'Crítico', value: (analytics.exame.classifications.Crítico || 0) + (analytics.ccp.classifications.Crítico || 0) },
+            { label: 'Atenção', value: (analytics.exame.classifications.Atenção || 0) + (analytics.ccp.classifications.Atenção || 0) },
+            { label: 'Adequado', value: (analytics.exame.classifications.Adequado || 0) + (analytics.ccp.classifications.Adequado || 0) },
+            { label: 'Destaque', value: (analytics.exame.classifications.Destaque || 0) + (analytics.ccp.classifications.Destaque || 0) }
+          ],
+          (value) => String(value)
+        )
+      ].join('');
+    }
   } catch (error) {
     redirectToLogin();
   }
-}
-
-function renderStatusBadge(item, type) {
-  const status = getRowClassification(item, type);
-  return `<span class="status-badge ${status.className}">${status.label}</span>`;
 }
 
 function updateResponseSummary(type, rows) {
   const target = document.getElementById(type === 'exame' ? 'summary-exame' : 'summary-ccp');
   if (!target) return;
 
-  const criticalCount = rows.filter((item) => normalizeStatusLabel(getRowClassification(item, type).label) === 'critico').length;
+  const criticalCount = rows.filter((item) => normalizeText(getRowClassification(item, type).label) === 'critico').length;
   target.textContent = `${rows.length} resultado(s) • ${criticalCount} crítico(s)`;
 }
 
@@ -296,8 +821,8 @@ function getFilterMenuMarkup(type, key, currentValue) {
 function positionFilterMenu(wrapper, button) {
   const rect = button.getBoundingClientRect();
   const menu = wrapper.firstElementChild;
-  const viewportPadding = 16;
   const menuRect = menu.getBoundingClientRect();
+  const viewportPadding = 16;
 
   let left = rect.right - menuRect.width;
   left = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuRect.width - viewportPadding));
@@ -352,7 +877,6 @@ function openColumnFilter(type, key, button) {
     if (key === 'Data_Recebimento') {
       const startDate = menu.querySelector(`#filter-start-${type}-${key}`).value;
       const endDate = menu.querySelector(`#filter-end-${type}-${key}`).value;
-
       if (startDate || endDate) {
         respostasState.filters[type][key] = { startDate, endDate };
       } else {
@@ -373,9 +897,7 @@ function openColumnFilter(type, key, button) {
 }
 
 function buildColumnHeader(label, type, key) {
-  if (!key) {
-    return `<span>${label}</span>`;
-  }
+  if (!key) return `<span>${label}</span>`;
 
   return `
     <div class="table-filter-head">
@@ -453,12 +975,7 @@ function renderResponsesTable(type) {
 
   table.querySelectorAll('.table-filter-button').forEach((button) => {
     const activeFilter = respostasState.filters[type]?.[button.dataset.key];
-    const isActive = Boolean(
-      typeof activeFilter === 'object'
-        ? activeFilter?.startDate || activeFilter?.endDate
-        : activeFilter
-    );
-
+    const isActive = Boolean(typeof activeFilter === 'object' ? activeFilter?.startDate || activeFilter?.endDate : activeFilter);
     button.classList.toggle('active', isActive);
     button.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -518,7 +1035,6 @@ function getMetricFields(type) {
 function formatFieldValue(value, format) {
   if (!value) return '-';
   if (format === 'date') return formatAdminDate(value);
-  if (format === 'number') return formatNumericValue(value);
   return value;
 }
 
@@ -532,49 +1048,29 @@ function buildSummaryCard(label, value, isRich = false) {
 }
 
 function detectQuestionType(meta) {
-  const fieldType = normalizeStatusLabel(String(meta?.Tipo_Campo || ''));
+  const fieldType = normalizeText(String(meta?.Tipo_Campo || ''));
   if (fieldType.includes('radio') || fieldType.includes('nota') || fieldType.includes('escala')) {
     return 'score';
   }
   return 'text';
 }
 
-async function ensureQuestionMeta(type) {
-  if (questionMetaCache[type]) return questionMetaCache[type];
-
-  try {
-    const formulario = type === 'exame' ? 'exame-provas' : 'ccp-cap';
-    const data = await apiGet(`/api/perguntas/${formulario}`);
-    if (Array.isArray(data)) {
-      questionMetaCache[type] = data;
-    } else if (Array.isArray(data?.perguntas)) {
-      questionMetaCache[type] = data.perguntas;
-    } else {
-      questionMetaCache[type] = [];
-    }
-  } catch (error) {
-    questionMetaCache[type] = [];
-  }
-
-  return questionMetaCache[type];
-}
-
 function getBlockFallbackTitle(type, blockKey) {
   const exameTitles = {
-    'B0': 'Identificação da avaliação',
-    'B1': 'Organização e infraestrutura',
-    'B2': 'Conduta e imparcialidade',
-    'B3': 'Conteúdo e adequação',
-    'B4': 'Integridade do processo',
-    'B5': 'Bloco específico - provas online',
-    'B6': 'Avaliação geral do exame'
+    B0: 'Identificação da avaliação',
+    B1: 'Organização e infraestrutura',
+    B2: 'Conduta e imparcialidade',
+    B3: 'Conteúdo e adequação',
+    B4: 'Integridade do processo',
+    B5: 'Bloco específico - provas online',
+    B6: 'Avaliação geral do exame'
   };
 
   const ccpTitles = {
-    'E0': 'Identificação da avaliação',
-    'E1': 'Avaliação institucional/regulatória',
-    'E2': 'Avaliação pedagógica',
-    'E3': 'Avaliação geral do curso'
+    E0: 'Identificação da avaliação',
+    E1: 'Avaliação institucional/regulatória',
+    E2: 'Avaliação pedagógica',
+    E3: 'Avaliação geral do curso'
   };
 
   return type === 'exame'
@@ -616,16 +1112,9 @@ function buildQuestionSections(item, type, metaRows) {
     .filter(([key, value]) => {
       if (!value) return false;
       if (renderedKeys.has(key)) return false;
-      return (
-        key.startsWith('Justificativa') ||
-        key === 'Avaliacao_Geral_Texto' ||
-        key === 'Observacoes_Finais'
-      );
+      return key.startsWith('Justificativa') || key === 'Avaliacao_Geral_Texto' || key === 'Observacoes_Finais';
     })
-    .map(([key, value]) => ({
-      label: formatDetailLabel(key),
-      value
-    }));
+    .map(([key, value]) => ({ label: formatDetailLabel(key), value }));
 
   return {
     blocks: [...blocks.entries()]
@@ -755,9 +1244,7 @@ async function loadRespostas() {
   if (!(await requireAuth())) return;
 
   try {
-    const data = await apiGet('/api/admin/respostas', getAdminHeaders());
-    respostasState.exame = data.exame || [];
-    respostasState.ccp = data.ccp || [];
+    await fetchAdminResponses();
     respostasState.filters = { exame: {}, ccp: {} };
     renderResponsesTable('exame');
     renderResponsesTable('ccp');
@@ -791,6 +1278,245 @@ async function showRespostaDetalhe(id) {
     });
   } catch (error) {
     alert(error.message || 'Não foi possível carregar o detalhe da resposta.');
+  }
+}
+
+function buildAlertCards(analytics) {
+  return [
+    {
+      title: 'Entidades críticas',
+      value: String(
+        [analytics.exame.byEntity, analytics.ccp.byEntity]
+          .flat()
+          .filter((item) => item.average <= 2.5).length
+      ),
+      note: 'média até 2,5'
+    },
+    {
+      title: 'Comentários negativos',
+      value: String(
+        [...analytics.exame.comments, ...analytics.ccp.comments]
+          .filter((item) => item.sentiment === 'Negativo').length
+      ),
+      note: 'classificação heurística'
+    },
+    {
+      title: 'Blocos sensíveis',
+      value: String(
+        [...analytics.exame.byBlock, ...analytics.ccp.byBlock]
+          .filter((item) => item.average <= 3).length
+      ),
+      note: 'média até 3,0'
+    }
+  ];
+}
+
+async function loadAlertasPage() {
+  if (!(await requireAuth())) return;
+
+  try {
+    const analytics = await loadAnalytics();
+    createMetricCards(document.getElementById('alert-cards'), buildAlertCards(analytics));
+
+    const entityContainer = document.getElementById('alert-entities');
+    renderListGroup(
+      entityContainer,
+      [
+        ...analytics.exame.byEntity.map((item) => ({ ...item, source: 'Exame por Provas' })),
+        ...analytics.ccp.byEntity.map((item) => ({ ...item, source: 'CCP/CAP' }))
+      ]
+        .filter((item) => item.average <= 3.2)
+        .sort((a, b) => a.average - b.average)
+        .slice(0, 8),
+      (item) => `
+        <article class="alert-list-item">
+          <div class="alert-list-top">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span class="status-badge ${item.average <= 2.5 ? 'critico' : 'atencao'}">${item.source}</span>
+          </div>
+          <p>Média ${formatNumericValue(item.average)} em ${item.count} resposta(s).</p>
+        </article>
+      `
+    );
+
+    const responseContainer = document.getElementById('alert-responses');
+    renderListGroup(
+      responseContainer,
+      [...respostasState.exame, ...respostasState.ccp]
+        .filter((item) => getRowClassification(item, getResponseType(item)).label === 'Crítico')
+        .sort((a, b) => getRowAverage(a, getResponseType(a)) - getRowAverage(b, getResponseType(b)))
+        .slice(0, 8),
+      (item) => {
+        const type = getResponseType(item);
+        return `
+          <article class="alert-list-item">
+            <div class="alert-list-top">
+              <strong>${escapeHtml(item.ID_Avaliacao || '-')}</strong>
+              ${renderStatusBadge(item, type)}
+            </div>
+            <p>${escapeHtml(item.Entidade_Certificadora || 'Não informada')} • média ${formatNumericValue(getRowAverage(item, type))}</p>
+          </article>
+        `;
+      }
+    );
+
+    const commentContainer = document.getElementById('alert-comments');
+    const categoryItems = [...analytics.exame.categories, ...analytics.ccp.categories]
+      .reduce((acc, item) => {
+        const current = acc.get(item.label) || { label: item.label, count: 0 };
+        current.count += item.count;
+        acc.set(item.label, current);
+        return acc;
+      }, new Map());
+
+    renderListGroup(
+      commentContainer,
+      [...categoryItems.values()].sort((a, b) => b.count - a.count).slice(0, 8),
+      (item) => `
+        <article class="alert-list-item">
+          <div class="alert-list-top">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span class="alert-chip">${item.count}</span>
+          </div>
+          <p>Tema recorrente nos comentários abertos, com potencial impacto na percepção institucional.</p>
+        </article>
+      `
+    );
+  } catch (error) {
+    redirectToLogin();
+  }
+}
+
+function buildNarrativeParagraphs(paragraphs) {
+  return paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
+}
+
+function buildQuantitativeNarrative(title, summary, worstBlock, topEntity, bottomEntity) {
+  const paragraphs = [summary];
+  if (topEntity) {
+    paragraphs.push(`${topEntity.label} registra o melhor desempenho agregado, com média ${formatNumericValue(topEntity.average)} em ${topEntity.count} resposta(s).`);
+  }
+  if (bottomEntity) {
+    paragraphs.push(`${bottomEntity.label} apresenta o menor desempenho agregado, com média ${formatNumericValue(bottomEntity.average)} e desvio padrão ${formatNumericValue(bottomEntity.stddev)}.`);
+  }
+  if (worstBlock) {
+    paragraphs.push(`O bloco temático mais sensível é ${worstBlock.label}, cuja média foi ${formatNumericValue(worstBlock.average)}.`);
+  }
+  return `
+    <div class="report-copy-block">
+      <h3>${escapeHtml(title)}</h3>
+      ${buildNarrativeParagraphs(paragraphs)}
+    </div>
+  `;
+}
+
+function buildQualitativeNarrative(analytics) {
+  const allComments = [...analytics.exame.comments, ...analytics.ccp.comments];
+  const bySentiment = aggregateCommentsBy(allComments, 'sentiment');
+  const byCategory = aggregateCommentsBy(allComments, 'category');
+  const paragraphs = [
+    `Foram coletados ${allComments.length} comentário(s) abertos. A distribuição automática por sentimento aponta ${bySentiment.map((item) => `${item.label}: ${item.count}`).join(', ')}.`,
+    `Os temas mais recorrentes concentram-se em ${byCategory.slice(0, 3).map((item) => item.label.toLowerCase()).join(', ')}.`,
+    'A leitura qualitativa sugere que os comentários críticos estão menos associados à integridade do processo e mais ligados à clareza operacional, experiência do respondente e desenho pedagógico.'
+  ];
+  return buildNarrativeParagraphs(paragraphs);
+}
+
+function buildCriticalPointsMarkup(points) {
+  return points.map((point) => `
+    <article class="report-list-item">
+      <div class="report-list-top">
+        <strong>${escapeHtml(point.title)}</strong>
+        <span class="status-badge ${point.level === 'Crítico' ? 'critico' : point.level === 'Atenção' ? 'atencao' : 'adequado'}">${escapeHtml(point.level)}</span>
+      </div>
+      <p>${escapeHtml(point.detail)}</p>
+    </article>
+  `).join('');
+}
+
+function buildRecommendationsMarkup(recommendations) {
+  return recommendations.map((recommendation) => `
+    <article class="report-list-item">
+      <div class="report-list-top">
+        <strong>${escapeHtml(recommendation.code)} • ${escapeHtml(recommendation.title)}</strong>
+      </div>
+      <p>${escapeHtml(recommendation.detail)}</p>
+    </article>
+  `).join('');
+}
+
+async function loadRelatoriosPage() {
+  if (!(await requireAuth())) return;
+
+  try {
+    const analytics = await loadAnalytics();
+
+    const reportPeriod = document.getElementById('report-period');
+    if (reportPeriod) reportPeriod.textContent = analytics.periodLabel;
+
+    const executiveSummary = document.getElementById('report-executive-summary');
+    if (executiveSummary) executiveSummary.innerHTML = buildNarrativeParagraphs(analytics.executiveSummary);
+
+    createMetricCards(document.getElementById('report-summary-cards'), [
+      { title: 'Respondentes totais', value: String(analytics.totalResponses), note: analytics.periodLabel },
+      { title: 'Média geral Exame', value: formatNumericValue(analytics.exame.stats.average), note: `desvio ${formatNumericValue(analytics.exame.stats.stddev)}` },
+      { title: 'Média geral CCP/CAP', value: formatNumericValue(analytics.ccp.stats.average), note: `desvio ${formatNumericValue(analytics.ccp.stats.stddev)}` },
+      { title: 'Comentários coletados', value: String(analytics.exame.comments.length + analytics.ccp.comments.length), note: 'base qualitativa' }
+    ]);
+
+    const chartGrid = document.getElementById('report-chart-grid');
+    if (chartGrid) {
+      chartGrid.innerHTML = [
+        renderChartCard('Gráfico 01 - Exame por Entidade', 'Média das entidades certificadoras no Exame.', analytics.exame.byEntity.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 02 - Exame por Nível', 'Comparativo por nível de certificação.', analytics.exame.byLevel.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 03 - Exame por Modalidade', 'Percepção por modalidade da prova.', analytics.exame.byModality.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 04 - Exame por Blocos', 'Média por bloco temático do Exame.', analytics.exame.byBlock.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 05 - CCP/CAP por Entidade', 'Média das entidades certificadoras em CCP/CAP.', analytics.ccp.byEntity.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 06 - CCP/CAP por Modalidade', 'Comparativo por modalidade de curso.', analytics.ccp.byModality.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 07 - CCP/CAP por Blocos', 'Média por bloco/eixo temático do CCP/CAP.', analytics.ccp.byBlock.map((item) => ({ label: item.label, value: item.average }))),
+        renderChartCard('Gráfico 08 - Sentimentos Exame', 'Distribuição de comentários do Exame.', analytics.exame.sentiments.map((item) => ({ label: item.label, value: item.count })), (value) => String(value)),
+        renderChartCard('Gráfico 09 - Sentimentos CCP/CAP', 'Distribuição de comentários do CCP/CAP.', analytics.ccp.sentiments.map((item) => ({ label: item.label, value: item.count })), (value) => String(value)),
+        renderChartCard('Gráfico 10 - Categorias Exame', 'Categorias de comentários do Exame.', analytics.exame.categories.map((item) => ({ label: item.label, value: item.count })), (value) => String(value)),
+        renderChartCard('Gráfico 11 - Categorias CCP/CAP', 'Categorias de comentários do CCP/CAP.', analytics.ccp.categories.map((item) => ({ label: item.label, value: item.count })), (value) => String(value)),
+        renderChartCard('Gráfico 12 - Comparação Geral', 'Comparação entre os dois instrumentos.', analytics.comparison.map((item) => ({ label: item.label, value: item.average })))
+      ].join('');
+    }
+
+    const quantExame = document.getElementById('report-quant-exame');
+    if (quantExame) {
+      quantExame.innerHTML = buildQuantitativeNarrative(
+        'Leitura do Exame por Provas',
+        `O Exame por Provas registrou média ${formatNumericValue(analytics.exame.stats.average)}, mediana ${formatNumericValue(analytics.exame.stats.median)} e desvio padrão ${formatNumericValue(analytics.exame.stats.stddev)}.`,
+        analytics.exame.byBlock[0],
+        analytics.exame.byEntity[0],
+        analytics.exame.byEntity[analytics.exame.byEntity.length - 1]
+      );
+    }
+
+    const quantCcp = document.getElementById('report-quant-ccp');
+    if (quantCcp) {
+      quantCcp.innerHTML = buildQuantitativeNarrative(
+        'Leitura do CCP/CAP',
+        `O CCP/CAP registrou média ${formatNumericValue(analytics.ccp.stats.average)}, mediana ${formatNumericValue(analytics.ccp.stats.median)} e desvio padrão ${formatNumericValue(analytics.ccp.stats.stddev)}.`,
+        analytics.ccp.byBlock[0],
+        analytics.ccp.byEntity[0],
+        analytics.ccp.byEntity[analytics.ccp.byEntity.length - 1]
+      );
+    }
+
+    const qualitative = document.getElementById('report-qualitative');
+    if (qualitative) qualitative.innerHTML = buildQualitativeNarrative(analytics);
+
+    const critical = document.getElementById('report-critical-points');
+    if (critical) critical.innerHTML = buildCriticalPointsMarkup(analytics.criticalPoints);
+
+    const recommendations = document.getElementById('report-recommendations');
+    if (recommendations) recommendations.innerHTML = buildRecommendationsMarkup(analytics.recommendations);
+
+    const conclusions = document.getElementById('report-conclusions');
+    if (conclusions) conclusions.innerHTML = buildNarrativeParagraphs(analytics.conclusions);
+  } catch (error) {
+    redirectToLogin();
   }
 }
 
@@ -845,14 +1571,10 @@ window.addEventListener('scroll', () => {
 
 window.addEventListener('DOMContentLoaded', () => {
   const logoutButton = document.getElementById('logout-button');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', redirectToLogin);
-  }
+  if (logoutButton) logoutButton.addEventListener('click', redirectToLogin);
 
   const downloadButton = document.getElementById('download-planilha');
-  if (downloadButton) {
-    downloadButton.addEventListener('click', downloadPlanilhaAdmin);
-  }
+  if (downloadButton) downloadButton.addEventListener('click', downloadPlanilhaAdmin);
 
   if (document.getElementById('login-form')) {
     handleLogin();
@@ -870,5 +1592,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (document.getElementById('table-exame')) {
     loadRespostas();
+  }
+
+  if (document.getElementById('alert-cards')) {
+    loadAlertasPage();
+  }
+
+  if (document.getElementById('report-summary-cards')) {
+    loadRelatoriosPage();
   }
 });

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIA Admin - Relatórios</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-dark admin-nav">
+    <div class="container">
+      <a class="navbar-brand" href="admin-dashboard.html"><i class="bi bi-clipboard2-data"></i>SIA Admin</a>
+      <div class="navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin-dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin-respostas.html">Respostas</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin-alertas.html">Alertas</a></li>
+          <li class="nav-item"><a class="nav-link active" href="admin-relatorios.html">Relatórios</a></li>
+          <li class="nav-item"><button id="download-planilha" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-download"></i>Baixar planilha</button></li>
+          <li class="nav-item"><button id="logout-button" class="btn btn-outline-light btn-sm ms-lg-2"><i class="bi bi-box-arrow-right"></i>Sair</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container page-shell">
+    <section class="page-title">
+      <h1 class="h3">Relatório analítico consolidado</h1>
+      <p class="text-muted mb-0">Apresentação executiva e técnica dos resultados de Exame por Provas e CCP/CAP, com recortes quantitativos, leitura qualitativa e recomendações.</p>
+    </section>
+
+    <section class="card report-hero-card mb-4">
+      <div class="card-body">
+        <div class="report-hero-top">
+          <div>
+            <div class="response-panel-kicker">Sumário executivo</div>
+            <h2 class="card-title h4 mb-2">Consolidação de resultados</h2>
+          </div>
+          <div id="report-period" class="response-summary-chip"></div>
+        </div>
+        <div id="report-executive-summary" class="report-copy"></div>
+      </div>
+    </section>
+
+    <div id="report-summary-cards" class="row g-4 mb-4"></div>
+
+    <section class="card mb-4">
+      <div class="card-body">
+        <div class="dashboard-section-head">
+          <div>
+            <div class="response-panel-kicker">Visualizações</div>
+            <h2 class="card-title h5 mb-1">Gráficos analíticos</h2>
+          </div>
+        </div>
+        <div id="report-chart-grid" class="report-chart-grid"></div>
+      </div>
+    </section>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Análise quantitativa</div>
+                <h2 class="card-title h5 mb-1">Exame por Provas</h2>
+              </div>
+            </div>
+            <div id="report-quant-exame" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Análise quantitativa</div>
+                <h2 class="card-title h5 mb-1">CCP/CAP</h2>
+              </div>
+            </div>
+            <div id="report-quant-ccp" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Análise qualitativa</div>
+                <h2 class="card-title h5 mb-1">Comentários e sentimento</h2>
+              </div>
+            </div>
+            <div id="report-qualitative" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Pontos críticos</div>
+                <h2 class="card-title h5 mb-1">Prioridades de intervenção</h2>
+              </div>
+            </div>
+            <div id="report-critical-points" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Recomendações</div>
+                <h2 class="card-title h5 mb-1">Plano objetivo de melhoria</h2>
+              </div>
+            </div>
+            <div id="report-recommendations" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+      <div class="col-lg-6">
+        <section class="card h-100">
+          <div class="card-body">
+            <div class="dashboard-section-head">
+              <div>
+                <div class="response-panel-kicker">Conclusões</div>
+                <h2 class="card-title h5 mb-1">Síntese final</h2>
+              </div>
+            </div>
+            <div id="report-conclusions" class="report-copy"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer py-4 text-center">
+    <div class="container text-muted">© 2026 SIA - Sistema Integrado de Avaliação</div>
+  </footer>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>
