@@ -9,96 +9,51 @@
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body class="bg-light">
-  <header class="site-header site-header-home">
+  <header class="site-header site-header-home site-header-clean">
     <div class="site-header-orb site-header-orb-a"></div>
     <div class="site-header-orb site-header-orb-b"></div>
     <div class="container">
-      <section class="hero-shell">
-        <div class="hero-copy">
+      <div class="home-admin-access">
+        <a href="admin-login.html" class="btn btn-light btn-admin-discreet">
+          <i class="bi bi-shield-lock"></i>
+          <span>Painel administrativo</span>
+        </a>
+      </div>
+
+      <section class="hero-shell hero-shell-clean">
+        <div class="hero-copy hero-copy-clean">
           <div class="brand-mark brand-mark-home"><i class="bi bi-clipboard2-data fs-3"></i></div>
           <div class="page-kicker">Plataforma institucional</div>
           <h1>SIA</h1>
-          <p class="hero-lead">Sistema Integrado de Avaliação para Exame por Provas e CCP/CAP, com operação pública estruturada e visão administrativa orientada por dados.</p>
-          <div class="hero-badges">
-            <span class="hero-badge"><i class="bi bi-shield-check"></i>Fluxo auditável</span>
-            <span class="hero-badge"><i class="bi bi-diagram-3"></i>Blocos estruturados</span>
-            <span class="hero-badge"><i class="bi bi-bar-chart-line"></i>Leitura gerencial</span>
-          </div>
-        </div>
-
-        <div class="hero-panel">
-          <div class="hero-panel-card hero-panel-card-primary">
-            <span class="hero-panel-kicker">Acesso público</span>
-            <strong>Respostas guiadas</strong>
-            <p>Formulários em etapas, regras condicionais e experiência orientada por clareza.</p>
-          </div>
-          <div class="hero-panel-grid">
-            <div class="hero-panel-card">
-              <span class="hero-metric">02</span>
-              <p>instrumentos principais de avaliação</p>
-            </div>
-            <div class="hero-panel-card">
-              <span class="hero-metric">01</span>
-              <p>painel administrativo consolidado</p>
-            </div>
-            <div class="hero-panel-card">
-              <span class="hero-metric">1-5</span>
-              <p>escala padronizada com tratamento de criticidade</p>
-            </div>
-            <div class="hero-panel-card">
-              <span class="hero-metric">360°</span>
-              <p>visão de acompanhamento institucional</p>
-            </div>
-          </div>
+          <p class="hero-lead">Sistema Integrado de Avaliação para registro estruturado das avaliações do Exame por Provas e dos cursos CCP/CAP.</p>
         </div>
       </section>
     </div>
   </header>
 
-  <main class="container landing-shell">
-    <section class="landing-intro">
+  <main class="container landing-shell landing-shell-clean">
+    <section class="landing-intro landing-intro-clean">
       <div>
-        <div class="section-kicker">Jornada principal</div>
-        <h2>Escolha a porta de entrada do sistema</h2>
+        <div class="section-kicker">Formulários de avaliação</div>
+        <h2>Escolha uma das opções abaixo</h2>
       </div>
-      <p>O ambiente público foi desenhado para coleta estruturada de avaliações. A área administrativa concentra leitura operacional, detalhamento e acompanhamento institucional.</p>
+      <p>Interface principal limpa, direta e orientada ao preenchimento dos formulários solicitados pela Comissão de Certificação Profissional dos RPPS.</p>
     </section>
 
-    <section class="landing-grid">
-      <article class="portal-card portal-card-publico">
-        <div class="portal-card-top">
-          <div class="portal-icon portal-icon-publico"><i class="bi bi-ui-checks-grid fs-4"></i></div>
-          <span class="portal-chip">Respondente</span>
-        </div>
-        <h3>Responder avaliações</h3>
-        <p>Preencha formulários estruturados para registrar a experiência do exame por provas ou do curso CCP/CAP com lógica por blocos e justificativas críticas.</p>
-        <ul class="portal-feature-list">
-          <li>Fluxo em etapas com progresso visível</li>
-          <li>Escala padronizada com regras condicionais</li>
-          <li>Envio orientado por consistência de dados</li>
-        </ul>
-        <div class="portal-actions portal-actions-stack">
-          <a href="responder-exame.html" class="btn btn-primary btn-hero-primary"><i class="bi bi-file-earmark-text"></i>Avaliação do Exame por Provas</a>
-          <a href="responder-ccp-cap.html" class="btn btn-light btn-hero-secondary"><i class="bi bi-card-checklist"></i>Avaliação CCP/CAP</a>
-        </div>
-      </article>
+    <section class="clean-entry-grid">
+      <a href="responder-ccp-cap.html" class="clean-entry-card clean-entry-card-ccp">
+        <span class="clean-entry-icon"><i class="bi bi-mortarboard"></i></span>
+        <span class="clean-entry-kicker">Botão 1</span>
+        <strong>Formulário de Avaliação das Entidades Certificadoras</strong>
+        <p>Avaliação Curso de Capacitação Profissional / Curso de Atualização Profissional</p>
+      </a>
 
-      <article class="portal-card portal-card-admin">
-        <div class="portal-card-top">
-          <div class="portal-icon portal-icon-admin"><i class="bi bi-speedometer2 fs-4"></i></div>
-          <span class="portal-chip">Gestão</span>
-        </div>
-        <h3>Painel administrativo</h3>
-        <p>Acesse uma camada de leitura institucional com respostas detalhadas, filtros analíticos, classificação visual e exportação da base consolidada.</p>
-        <ul class="portal-feature-list">
-          <li>Consulta por entidade, modalidade, data e classificação</li>
-          <li>Detalhamento estruturado por resposta</li>
-          <li>Download da planilha administrativa</li>
-        </ul>
-        <div class="portal-actions">
-          <a href="admin-login.html" class="btn btn-secondary btn-hero-admin"><i class="bi bi-shield-lock"></i>Acessar área restrita</a>
-        </div>
-      </article>
+      <a href="responder-exame.html" class="clean-entry-card clean-entry-card-exame">
+        <span class="clean-entry-icon"><i class="bi bi-journal-check"></i></span>
+        <span class="clean-entry-kicker">Botão 2</span>
+        <strong>Formulário de Avaliação das Entidades Certificadoras</strong>
+        <p>Avaliação do Exame por Provas</p>
+      </a>
     </section>
   </main>
 

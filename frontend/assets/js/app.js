@@ -1,3 +1,74 @@
+const THANK_YOU_MESSAGE = 'A Comissão de Certificação Profissional dos RPPS agradece sua valiosa colaboração na avaliação dos cursos de capacitação profissional e do exame por provas. Sua participação é essencial para o aprimoramento contínuo do processo de certificação e para o fortalecimento da qualificação dos profissionais que atuam nos RPPS.';
+
+const FIELD_LABEL_OVERRIDES = {
+  'ccp-cap': {
+    Identificacao_Respondente: 'Identificação (opcional)',
+    Entidade_Certificadora: 'Entidade Certificadora',
+    Modalidade_CCP_CAP: 'Modalidade de Certificação',
+    Tipo_Certificacao: 'Tipo de Certificação',
+    Data_Curso: 'Data de realização do curso',
+    Avaliacao_Geral_Texto: 'Considerando os blocos anteriores, forneça uma avaliação geral do curso.',
+    Observacoes_Finais: 'Observações finais'
+  },
+  'exame-provas': {
+    Identificacao_Respondente: 'Identificação (opcional)',
+    Entidade_Certificadora: 'Entidade Certificadora',
+    Tipo_Certificacao: 'Tipo de Certificação realizada',
+    Nivel_Certificacao: 'Nível da Certificação',
+    Modalidade_Prova: 'Realização da prova',
+    Data_Exame: 'Data de realização do exame',
+    Avaliacao_Geral_Texto: 'Considerando os blocos anteriores, forneça uma avaliação geral do exame.',
+    Observacoes_Finais: 'Observações finais'
+  }
+};
+
+const BLOCK_NAME_OVERRIDES = {
+  'ccp-cap': {
+    'Identificacao da avaliacao': 'Identificação da avaliação',
+    'Transparencia e regras do processo': 'Transparência e regras do processo',
+    'Controle de participacao e frequencia': 'Controle de participação e frequência',
+    'Avaliacoes de aprendizagem': 'Avaliações de aprendizagem',
+    'Integridade e autenticidade das avaliacoes': 'Integridade e autenticidade das avaliações',
+    'Conformidade do conteudo programatico': 'Conformidade do conteúdo programático',
+    'Conformidade do corpo docente': 'Conformidade do corpo docente',
+    'Imparcialidade e ausencia de promocao comercial': 'Imparcialidade e ausência de promoção comercial',
+    'Politica de precos e acesso': 'Política de preços e acesso',
+    'Qualidade e adequacao do conteudo': 'Qualidade e adequação do conteúdo',
+    'Corpo docente - desempenho pedagogico': 'Corpo docente - desempenho pedagógico',
+    'Entidade certificadora': 'Entidade certificadora',
+    'Avaliacao geral do curso': 'Avaliação geral do curso',
+    'Observacoes finais': 'Observações finais'
+  },
+  'exame-provas': {
+    'Identificacao da avaliacao': 'Identificação da avaliação',
+    'Organizacao e infraestrutura': 'Organização e infraestrutura',
+    'Conduta e imparcialidade': 'Conduta e imparcialidade',
+    'Conteudo e adequacao': 'Conteúdo e adequação',
+    'Integridade do processo': 'Integridade do processo',
+    'Bloco especifico - provas online': 'Bloco específico - provas online',
+    'Avaliacao geral do exame': 'Avaliação geral do exame',
+    'Observacoes finais': 'Observações finais'
+  }
+};
+
+const SELECT_OPTION_OVERRIDES = {
+  Entidade_Certificadora: ['ABIPEM', 'ANASPS', 'ICDS', 'Instituto Totum'],
+  Modalidade_CCP_CAP: ['Curso de Capacitação Profissional', 'Curso de Atualização Profissional'],
+  Modalidade_Prova: ['Presencial', 'Online (remota)'],
+  ccpCapTipoCertificacao: [
+    'Conselhos - Intermediário',
+    'Dirigente - Avançado',
+    'Gestor de Recursos e Comitê de Investimento - Avançado'
+  ],
+  exameTipoCertificacao: [
+    'Conselhos',
+    'Dirigente',
+    'Gestor de Recursos',
+    'Membros do Comitê'
+  ],
+  Nivel_Certificacao: ['Básico', 'Intermediário', 'Avançado']
+};
+
 function parseOptions(rows) {
   if (!Array.isArray(rows)) return [];
   return rows
@@ -8,6 +79,41 @@ function parseOptions(rows) {
     .map((item) => item.nome || item.Nome || Object.values(item).find((value) => value && value.toString().trim()))
     .filter((value, index, self) => value && self.indexOf(value) === index)
     .sort((a, b) => a.toString().localeCompare(b.toString(), 'pt-BR'));
+}
+
+function normalizeText(value) {
+  return (value || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getFieldLabel(formulario, question) {
+  const fieldName = question.Codigo_Pergunta || question.Nome_Bloco_Eixo || question.Grupo;
+  const override = FIELD_LABEL_OVERRIDES[formulario]?.[fieldName];
+  return override || question.Observacao || question.Codigo_Pergunta || question.Nome_Bloco_Eixo;
+}
+
+function getBlockName(formulario, rawBlockName, fallback) {
+  const override = BLOCK_NAME_OVERRIDES[formulario]?.[rawBlockName];
+  return override || rawBlockName || fallback;
+}
+
+function getSelectOptions(fieldName, formulario, cadastroOptions) {
+  if (fieldName === 'Entidade_Certificadora') return SELECT_OPTION_OVERRIDES.Entidade_Certificadora;
+  if (fieldName === 'Modalidade_CCP_CAP') return SELECT_OPTION_OVERRIDES.Modalidade_CCP_CAP;
+  if (fieldName === 'Modalidade_Prova') return SELECT_OPTION_OVERRIDES.Modalidade_Prova;
+  if (fieldName === 'Tipo_Certificacao' && formulario === 'ccp-cap') return SELECT_OPTION_OVERRIDES.ccpCapTipoCertificacao;
+  if (fieldName === 'Tipo_Certificacao' && formulario === 'exame-provas') return SELECT_OPTION_OVERRIDES.exameTipoCertificacao;
+  if (fieldName === 'Nivel_Certificacao') return SELECT_OPTION_OVERRIDES.Nivel_Certificacao;
+
+  const options = cadastroOptions[fieldName] || [];
+  if (fieldName === 'Nivel_Certificacao') {
+    return options.filter((option) => !normalizeText(option).includes('sem nivel'));
+  }
+  return options;
 }
 
 function ensureFormState(stepsContainer, type, title, description, animationSrc) {
@@ -30,6 +136,17 @@ function ensureFormState(stepsContainer, type, title, description, animationSrc)
   return state;
 }
 
+function updateFormState(type, title, description) {
+  const state = document.getElementById(`form-state-${type}`);
+  if (!state) return;
+  const kicker = state.querySelector('.form-state-kicker');
+  const heading = state.querySelector('h3');
+  const text = state.querySelector('p');
+  if (kicker) kicker.textContent = type === 'loading' ? 'Preparando' : 'Concluído';
+  if (heading) heading.textContent = title;
+  if (text) text.textContent = description;
+}
+
 function setFormState(stepsContainer, type) {
   const loadingState = document.getElementById('form-state-loading');
   const successState = document.getElementById('form-state-success');
@@ -39,10 +156,19 @@ function setFormState(stepsContainer, type) {
   if (type === 'success' && successState) successState.classList.add('active');
 }
 
-function createControlField(question, cadastroOptions) {
+function scrollToFormTop() {
+  const header = document.querySelector('.site-header');
+  const card = document.querySelector('.evaluation-card');
+  const target = card || header;
+  if (!target) return;
+  const top = target.getBoundingClientRect().top + window.scrollY - 24;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+function createControlField(formulario, question, cadastroOptions) {
   const fieldName = question.Codigo_Pergunta || question.Nome_Bloco_Eixo || question.Grupo;
   const required = question.Obrigatoria && question.Obrigatoria.toString().toLowerCase() === 'sim';
-  const label = question.Observacao || question.Codigo_Pergunta || question.Nome_Bloco_Eixo;
+  const label = getFieldLabel(formulario, question);
   const type = question.Tipo_Campo ? question.Tipo_Campo.toString().toLowerCase() : 'texto';
   const fieldWrapper = document.createElement('div');
   fieldWrapper.className = 'mb-3';
@@ -98,7 +224,7 @@ function createControlField(question, cadastroOptions) {
     select.id = fieldName;
     select.name = fieldName;
     select.innerHTML = '<option value="">Selecione</option>';
-    const options = cadastroOptions || [];
+    const options = getSelectOptions(fieldName, formulario, cadastroOptions);
     options.forEach((optionValue) => {
       const option = document.createElement('option');
       option.value = optionValue;
@@ -128,9 +254,11 @@ function createControlField(question, cadastroOptions) {
     textarea.className = 'form-control';
     textarea.id = fieldName;
     textarea.name = fieldName;
-    textarea.rows = 3;
+    textarea.rows = fieldName === 'Observacoes_Finais' || fieldName === 'Avaliacao_Geral_Texto' ? 4 : 3;
     if (required) textarea.required = true;
-    textarea.placeholder = 'Digite sua resposta...';
+    textarea.placeholder = fieldName.toLowerCase().includes('justificativa')
+      ? 'Descrição objetiva e fundamentada de fato observado'
+      : 'Digite sua resposta...';
     fieldWrapper.appendChild(fieldLabel);
     fieldWrapper.appendChild(textarea);
     return fieldWrapper;
@@ -148,7 +276,7 @@ function createControlField(question, cadastroOptions) {
   return fieldWrapper;
 }
 
-function createBlockStep(blockKey, blockName, questions, cadastroOptions) {
+function createBlockStep(formulario, blockKey, blockName, questions, cadastroOptions) {
   const step = document.createElement('div');
   step.className = 'form-step';
   step.dataset.step = blockKey;
@@ -163,7 +291,7 @@ function createBlockStep(blockKey, blockName, questions, cadastroOptions) {
   `;
   const container = step.querySelector('.card-body');
   questions.forEach((question) => {
-    const inputWrapper = createControlField(question, cadastroOptions[question.Codigo_Pergunta]);
+    const inputWrapper = createControlField(formulario, question, cadastroOptions);
     const isJustificationField =
       (question.Codigo_Pergunta || '').toLowerCase().includes('justificativa') ||
       (question.Tipo_Campo || '').toLowerCase().includes('texto');
@@ -187,13 +315,23 @@ function buildCadastroOptions(cadastros) {
   };
 }
 
-function groupBy(array, key) {
-  return array.reduce((acc, item) => {
-    const group = item[key] || 'Sem bloco';
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(item);
-    return acc;
-  }, {});
+function groupQuestionsByStep(array) {
+  const groups = [];
+  const map = new Map();
+  array.forEach((item, index) => {
+    const uniqueKey = `${item.Grupo || 'Sem grupo'}::${item.Bloco_Eixo || 'Sem bloco'}::${item.Nome_Bloco_Eixo || `Bloco ${index + 1}`}`;
+    if (!map.has(uniqueKey)) {
+      const group = {
+        key: uniqueKey,
+        rawBlockName: item.Nome_Bloco_Eixo || item.Bloco_Eixo || 'Sem bloco',
+        questions: []
+      };
+      map.set(uniqueKey, group);
+      groups.push(group);
+    }
+    map.get(uniqueKey).questions.push(item);
+  });
+  return groups;
 }
 
 function updateProgress(currentIndex, total) {
@@ -266,6 +404,12 @@ function resetConditionalFields(stepsContainer) {
   });
 }
 
+function setButtonsDisabled(buttons, disabled) {
+  buttons.forEach((button) => {
+    if (button) button.disabled = disabled;
+  });
+}
+
 async function setupForm(formulario) {
   const form = document.getElementById('evaluation-form');
   const stepsContainer = document.getElementById('form-steps');
@@ -288,7 +432,7 @@ async function setupForm(formulario) {
       stepsContainer,
       'success',
       'Avaliação enviada',
-      'Sua resposta foi registrada com sucesso.',
+      THANK_YOU_MESSAGE,
       'https://assets3.lottiefiles.com/packages/lf20_jbrw3hcz.json'
     );
     setFormState(stepsContainer, 'loading');
@@ -309,13 +453,12 @@ async function setupForm(formulario) {
       return;
     }
 
-    const grouped = groupBy(questions, 'Bloco_Eixo');
-    const stepKeys = Object.keys(grouped);
+    const groupedSteps = groupQuestionsByStep(questions);
 
     stepsContainer.innerHTML = '';
-    stepKeys.forEach((stepKey) => {
-      const blockName = grouped[stepKey][0]?.Nome_Bloco_Eixo || stepKey;
-      const stepElement = createBlockStep(stepKey, blockName, grouped[stepKey], cadastroOptions);
+    groupedSteps.forEach((stepGroup) => {
+      const blockName = getBlockName(formulario, stepGroup.rawBlockName, stepGroup.key);
+      const stepElement = createBlockStep(formulario, stepGroup.key, blockName, stepGroup.questions, cadastroOptions);
       stepsContainer.appendChild(stepElement);
     });
     resetConditionalFields(stepsContainer);
@@ -330,7 +473,7 @@ async function setupForm(formulario) {
 
     function syncConditionalSteps() {
       const modalidade = form.querySelector('[name="Modalidade_Prova"]')?.value || '';
-      const isOnline = modalidade.toLowerCase().includes('online');
+      const isOnline = normalizeText(modalidade).includes('online');
       stepElements.forEach((element) => {
         if (element.dataset.requiresOnline !== 'true') return;
         element.classList.toggle('d-none', !isOnline);
@@ -384,7 +527,9 @@ async function setupForm(formulario) {
     prevButton.addEventListener('click', () => {
       if (currentStep <= 0) return;
       currentStep -= 1;
+      messageContainer.innerHTML = '';
       showStep(currentStep);
+      scrollToFormTop();
     });
 
     nextButton.addEventListener('click', () => {
@@ -397,6 +542,7 @@ async function setupForm(formulario) {
       if (currentStep < getVisibleSteps().length - 1) {
         currentStep += 1;
         showStep(currentStep);
+        scrollToFormTop();
       }
     });
 
@@ -416,6 +562,10 @@ async function setupForm(formulario) {
 
       const endpoint = formulario === 'exame-provas' ? '/api/respostas/exame' : '/api/respostas/ccp-cap';
       try {
+        setButtonsDisabled([prevButton, nextButton, submitButton], true);
+        updateFormState('loading', 'Enviando avaliação', 'Estamos registrando sua resposta. Aguarde alguns instantes.');
+        setFormState(stepsContainer, 'loading');
+        scrollToFormTop();
         const result = await apiPost(endpoint, payload);
         showMessage(messageContainer, result.message || 'Avaliação enviada com sucesso.', 'success');
         form.reset();
@@ -423,12 +573,17 @@ async function setupForm(formulario) {
         currentStep = 0;
         syncConditionalSteps();
         showStep(currentStep);
+        updateFormState('success', 'Avaliação enviada', THANK_YOU_MESSAGE);
         setFormState(stepsContainer, 'success');
         window.setTimeout(() => {
           setFormState(stepsContainer, null);
           showStep(0);
-        }, 2200);
+          setButtonsDisabled([prevButton, nextButton, submitButton], false);
+          scrollToFormTop();
+        }, 5200);
       } catch (error) {
+        setFormState(stepsContainer, null);
+        setButtonsDisabled([prevButton, nextButton, submitButton], false);
         showMessage(messageContainer, error.message || 'Não foi possível enviar a avaliação.', 'danger');
       }
     });
