@@ -194,7 +194,20 @@ a {
 }
 
 .hero-copy-clean {
-  max-width: 46rem;
+  max-width: 74rem;
+}
+
+.site-header-home .hero-copy-clean {
+  max-width: 72rem;
+}
+
+.site-header-home .hero-copy-clean h1 {
+  max-width: 68rem;
+  margin: 0;
+  font-size: clamp(2.8rem, 5.3vw, 5.2rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
 }
 
 .hero-copy h1 {
