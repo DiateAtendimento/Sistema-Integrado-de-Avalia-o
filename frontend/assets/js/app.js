@@ -501,6 +501,7 @@ async function setupForm(formulario) {
   const nextButton = document.getElementById('next-step');
   const prevButton = document.getElementById('prev-step');
   const messageContainer = document.getElementById('form-message');
+  let isSubmissionComplete = false;
 
   if (!form || !stepsContainer) return;
 
@@ -576,6 +577,14 @@ async function setupForm(formulario) {
     }
 
     function showStep(index) {
+      if (isSubmissionComplete) {
+        prevButton.style.display = 'none';
+        nextButton.style.display = 'none';
+        submitButton.classList.add('d-none');
+        updateProgress(0, 0);
+        return;
+      }
+
       const visibleSteps = getVisibleSteps();
       const totalSteps = visibleSteps.length;
       if (!totalSteps) {
@@ -609,6 +618,7 @@ async function setupForm(formulario) {
     });
 
     prevButton.addEventListener('click', () => {
+      if (isSubmissionComplete) return;
       if (currentStep <= 0) return;
       currentStep -= 1;
       messageContainer.innerHTML = '';
@@ -617,6 +627,7 @@ async function setupForm(formulario) {
     });
 
     nextButton.addEventListener('click', () => {
+      if (isSubmissionComplete) return;
       const step = getVisibleSteps()[currentStep];
       if (!validateStep(step)) {
         showMessage(messageContainer, 'Preencha todos os campos obrigatórios antes de avançar.', 'danger');
@@ -654,17 +665,13 @@ async function setupForm(formulario) {
         showMessage(messageContainer, result.message || 'Avaliação enviada com sucesso.', 'success');
         form.reset();
         resetConditionalFields(stepsContainer);
-        currentStep = 0;
-        syncConditionalSteps();
-        showStep(currentStep);
+        isSubmissionComplete = true;
         updateFormState('success', 'Avaliação enviada', THANK_YOU_MESSAGE);
         setFormState(stepsContainer, 'success');
-        window.setTimeout(() => {
-          setFormState(stepsContainer, null);
-          showStep(0);
-          setButtonsDisabled([prevButton, nextButton, submitButton], false);
-          scrollToFormTop();
-        }, 8000);
+        prevButton.style.display = 'none';
+        nextButton.style.display = 'none';
+        submitButton.classList.add('d-none');
+        scrollToFormTop();
       } catch (error) {
         setFormState(stepsContainer, null);
         setButtonsDisabled([prevButton, nextButton, submitButton], false);
