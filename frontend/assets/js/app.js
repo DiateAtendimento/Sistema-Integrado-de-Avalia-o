@@ -63,11 +63,79 @@ const SELECT_OPTION_OVERRIDES = {
   exameTipoCertificacao: [
     'Conselhos',
     'Dirigente',
-    'Gestor de Recursos',
-    'Membros do Comitê'
+    'Gestor de Recursos e Membros do Comitê'
   ],
   Nivel_Certificacao: ['Básico', 'Intermediário', 'Avançado']
 };
+
+const TEXT_REPLACEMENTS = new Map([
+  ['descricao objetiva e fundamentada do fato observado', 'Descrição objetiva e fundamentada de fato observado'],
+  ['considerando os blocos anteriores, forneca uma avaliacao geral do exame.', 'Considerando os blocos anteriores, forneça uma avaliação geral do exame.'],
+  ['considerando os blocos anteriores, forneca uma avaliacao geral do curso.', 'Considerando os blocos anteriores, forneça uma avaliação geral do curso.'],
+  ['item nao obrigatorio. caso deseje, este e um espaco livre para sua manifestacao sobre o exame ou para sugestoes de melhoria da qualidade do exame.', 'Observações finais'],
+  ['item nao obrigatorio. caso deseje, este e um espaco livre para sua manifestacao sobre o curso ou para sugestoes de melhoria de sua qualidade.', 'Observações finais'],
+  ['nao houve falhas tecnicas relevantes durante o exame.', 'Não houve falhas técnicas relevantes durante o exame.'],
+  ['as orientacoes iniciais foram claras e suficientes.', 'As orientações iniciais foram claras e suficientes.'],
+  ['nao houve tratamento diferenciado entre candidatos.', 'Não houve tratamento diferenciado entre candidatos.'],
+  ['o sigilo das informacoes foi preservado.', 'O sigilo das informações foi preservado.'],
+  ['o conteudo da prova estava compativel com o edital.', 'O conteúdo da prova estava compatível com o edital.'],
+  ['as questoes estavam redigidas com clareza, sem erros materiais evidentes.', 'As questões estavam redigidas com clareza, sem erros materiais evidentes.'],
+  ['o nivel de dificuldade foi compativel com a certificacao pretendida.', 'O nível de dificuldade foi compatível com a certificação pretendida.'],
+  ['o exame avaliou os conhecimentos e habilidades esperadas para a certificacao.', 'O exame avaliou os conhecimentos e habilidades esperadas para a certificação.'],
+  ['o tempo disponivel para realizacao do exame foi suficiente.', 'O tempo disponível para realização do exame foi suficiente.'],
+  ['o modelo de aplicacao adotado garantiu igualdade de condicoes entre os candidatos.', 'O modelo de aplicação adotado garantiu igualdade de condições entre os candidatos.'],
+  ['houve fiscalizacao adequada durante todo o exame.', 'Houve fiscalização adequada durante todo o exame.'],
+  ['o processo adotado dificultou praticas indevidas.', 'O processo adotado dificultou práticas indevidas.'],
+  ['confio na credibilidade do processo de certificacao realizado.', 'Confio na credibilidade do processo de certificação realizado.'],
+  ['minha identidade foi verificada de forma rigorosa antes do inicio da prova.', 'Minha identidade foi verificada de forma rigorosa antes do início da prova.'],
+  ['foi exigida apresentacao de documento oficial com foto.', 'Foi exigida apresentação de documento oficial com foto.'],
+  ['houve registro de imagem (foto ou video) para confirmacao de identidade.', 'Houve registro de imagem (foto ou vídeo) para confirmação de identidade.'],
+  ['permaneci com camera ativa durante toda a realizacao da prova.', 'Permaneci com câmera ativa durante toda a realização da prova.'],
+  ['fui informado previamente sobre a gravacao de video e/ou audio.', 'Fui informado previamente sobre a gravação de vídeo e/ou áudio.'],
+  ['o sistema monitorou minha atividade na tela durante o exame.', 'O sistema monitorou minha atividade na tela durante o exame.'],
+  ['o sistema emitiu alertas ou bloqueios em caso de troca de tela ou janela.', 'O sistema emitiu alertas ou bloqueios em caso de troca de tela ou janela.'],
+  ['houve fiscalizacao efetiva durante todo o periodo da prova.', 'Houve fiscalização efetiva durante todo o período da prova.'],
+  ['foi exigida visualizacao previa do ambiente antes do inicio da prova.', 'Foi exigida visualização prévia do ambiente antes do início da prova.'],
+  ['nao foi permitido o uso de dispositivos paralelos nao autorizados.', 'Não foi permitido o uso de dispositivos paralelos não autorizados.'],
+  ['as regras sobre conduta e uso de materiais foram claras na modalidade online.', 'As regras sobre conduta e uso de materiais foram claras na modalidade online.'],
+  ['considero que o exame foi conduzido de forma tecnica e profissional.', 'Considero que o exame foi conduzido de forma técnica e profissional.'],
+  ['a entidade demonstrou capacidade tecnica para aplicacao do exame.', 'A entidade demonstrou capacidade técnica para aplicação do exame.'],
+  ['nao houve alteracoes inesperadas nas regras apos o inicio do curso.', 'Não houve alterações inesperadas nas regras após o início do curso.'],
+  ['as condicoes para emissao do certificado estiveram vinculadas ao cumprimento das regras estabelecidas.', 'As condições para emissão do certificado estiveram vinculadas ao cumprimento das regras estabelecidas.'],
+  ['o sistema exigiu participacao efetiva nas aulas.', 'O sistema exigiu participação efetiva nas aulas.'],
+  ['nao foi possivel concluir o curso sem o cumprimento das exigencias minimas.', 'Não foi possível concluir o curso sem o cumprimento das exigências mínimas.'],
+  ['foram aplicadas avaliacoes ao longo do curso para aferir a aprendizagem de forma progressiva.', 'Foram aplicadas avaliações ao longo do curso para aferir a aprendizagem de forma progressiva.'],
+  ['houve alteracoes das questoes entre as turmas ou entre as tentativas realizadas.', 'Houve alterações das questões entre as turmas ou entre as tentativas realizadas.'],
+  ['as questoes foram distribuidas de forma coerente nos respectivos modulos.', 'As questões foram distribuídas de forma coerente nos respectivos módulos.'],
+  ['nao foi possivel repetir indefinidamente a mesma questao.', 'Não foi possível repetir indefinidamente a mesma questão.'],
+  ['houve verificacao de identidade do participante.', 'Houve verificação de identidade do participante.'],
+  ['o ambiente impos restricoes tecnicas adequadas.', 'O ambiente impôs restrições técnicas adequadas.'],
+  ['nao foram observadas fragilidades que permitissem a realizacao da prova por terceiros.', 'Não foram observadas fragilidades que permitissem a realização da prova por terceiros.'],
+  ['o conteudo do curso correspondeu ao programa previamente divulgado.', 'O conteúdo do curso correspondeu ao programa previamente divulgado.'],
+  ['nao foram observadas questoes desatualizadas ou incompativeis com a legislacao vigente.', 'Não foram observadas questões desatualizadas ou incompatíveis com a legislação vigente.'],
+  ['o nivel de exigencia foi compativel com a certificacao realizada.', 'O nível de exigência foi compatível com a certificação realizada.'],
+  ['a duracao dos modulos e do curso foi adequada ao conteudo programatico.', 'A duração dos módulos e do curso foi adequada ao conteúdo programático.'],
+  ['os professores do curso sao os mesmos divulgados anteriormente.', 'Os professores do curso são os mesmos divulgados anteriormente.'],
+  ['alteracoes no corpo docente foram comunicadas previamente aos alunos e/ou a comissao de certificacao.', 'Alterações no corpo docente foram comunicadas previamente aos alunos e/ou à Comissão de Certificação.'],
+  ['o conteudo foi apresentado de forma tecnica e imparcial.', 'O conteúdo foi apresentado de forma técnica e imparcial.'],
+  ['nao houve divulgacao de produtos sem finalidade educativa.', 'Não houve divulgação de produtos sem finalidade educativa.'],
+  ['nao houve inducao de preferencia sem fundamentacao tecnica objetiva.', 'Não houve indução de preferência sem fundamentação técnica objetiva.'],
+  ['valores informados previamente de forma clara.', 'Valores informados previamente de forma clara.'],
+  ['criterios aplicados de forma objetiva e isonomica.', 'Critérios aplicados de forma objetiva e isonômica.'],
+  ['politicas de bolsas divulgadas com criterios claros.', 'Políticas de bolsas divulgadas com critérios claros.'],
+  ['aderencia ao conteudo programatico divulgado.', 'Aderência ao conteúdo programático divulgado.'],
+  ['atualizacao compativel com a legislacao vigente.', 'Atualização compatível com a legislação vigente.'],
+  ['coerencia do material didatico.', 'Coerência do material didático.'],
+  ['coerencia das avaliacoes com o conteudo trabalhado.', 'Coerência das avaliações com o conteúdo trabalhado.'],
+  ['o curso proporcionou os conhecimentos e habilidades esperados.', 'O curso proporcionou os conhecimentos e habilidades esperados.'],
+  ['dominio tecnico do conteudo ministrado.', 'Domínio técnico do conteúdo ministrado.'],
+  ['respostas as duvidas de forma clara e fundamentada.', 'Respostas às dúvidas de forma clara e fundamentada.'],
+  ['estabilidade da plataforma durante aulas e avaliacoes.', 'Estabilidade da plataforma durante aulas e avaliações.'],
+  ['suporte tecnico prestado de forma tempestiva.', 'Suporte técnico prestado de forma tempestiva.'],
+  ['canais de comunicacao acessiveis e funcionais.', 'Canais de comunicação acessíveis e funcionais.'],
+  ['considero que o curso foi conduzido de forma tecnica e profissional.', 'Considero que o curso foi conduzido de forma técnica e profissional.'],
+  ['a entidade demonstrou capacidade tecnica para realizacao do curso.', 'A entidade demonstrou capacidade técnica para realização do curso.']
+]);
 
 function parseOptions(rows) {
   if (!Array.isArray(rows)) return [];
@@ -90,15 +158,21 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function prettifyText(value) {
+  const text = (value || '').toString().trim();
+  if (!text) return text;
+  return TEXT_REPLACEMENTS.get(normalizeText(text)) || text;
+}
+
 function getFieldLabel(formulario, question) {
   const fieldName = question.Codigo_Pergunta || question.Nome_Bloco_Eixo || question.Grupo;
   const override = FIELD_LABEL_OVERRIDES[formulario]?.[fieldName];
-  return override || question.Observacao || question.Codigo_Pergunta || question.Nome_Bloco_Eixo;
+  return prettifyText(override || question.Observacao || question.Codigo_Pergunta || question.Nome_Bloco_Eixo);
 }
 
 function getBlockName(formulario, rawBlockName, fallback) {
   const override = BLOCK_NAME_OVERRIDES[formulario]?.[rawBlockName];
-  return override || rawBlockName || fallback;
+  return prettifyText(override || rawBlockName || fallback);
 }
 
 function getSelectOptions(fieldName, formulario, cadastroOptions) {
@@ -124,7 +198,7 @@ function ensureFormState(stepsContainer, type, title, description, animationSrc)
   state.className = `form-state form-state-${type}`;
   state.innerHTML = `
     <div class="form-state-card">
-      <lottie-player src="${animationSrc}" background="transparent" speed="1" ${type === 'loading' ? 'loop autoplay' : ''}></lottie-player>
+      <lottie-player src="${animationSrc}" background="transparent" speed="1" ${type === 'loading' ? 'loop autoplay' : 'autoplay'}></lottie-player>
       <div class="form-state-copy">
         <div class="form-state-kicker">${type === 'loading' ? 'Preparando' : 'Concluído'}</div>
         <h3>${title}</h3>
@@ -228,7 +302,7 @@ function createControlField(formulario, question, cadastroOptions) {
     options.forEach((optionValue) => {
       const option = document.createElement('option');
       option.value = optionValue;
-      option.textContent = optionValue;
+      option.textContent = prettifyText(optionValue);
       select.appendChild(option);
     });
     if (required) select.required = true;
@@ -332,6 +406,16 @@ function groupQuestionsByStep(array) {
     map.get(uniqueKey).questions.push(item);
   });
   return groups;
+}
+
+function reorderQuestions(questions) {
+  const items = [...questions];
+  const generalTextIndex = items.findIndex((question) => question.Codigo_Pergunta === 'Avaliacao_Geral_Texto');
+  if (generalTextIndex > -1) {
+    const [generalText] = items.splice(generalTextIndex, 1);
+    items.push(generalText);
+  }
+  return items;
 }
 
 function updateProgress(currentIndex, total) {
@@ -458,7 +542,7 @@ async function setupForm(formulario) {
     stepsContainer.innerHTML = '';
     groupedSteps.forEach((stepGroup) => {
       const blockName = getBlockName(formulario, stepGroup.rawBlockName, stepGroup.key);
-      const stepElement = createBlockStep(formulario, stepGroup.key, blockName, stepGroup.questions, cadastroOptions);
+      const stepElement = createBlockStep(formulario, stepGroup.key, blockName, reorderQuestions(stepGroup.questions), cadastroOptions);
       stepsContainer.appendChild(stepElement);
     });
     resetConditionalFields(stepsContainer);
@@ -580,7 +664,7 @@ async function setupForm(formulario) {
           showStep(0);
           setButtonsDisabled([prevButton, nextButton, submitButton], false);
           scrollToFormTop();
-        }, 5200);
+        }, 8000);
       } catch (error) {
         setFormState(stepsContainer, null);
         setButtonsDisabled([prevButton, nextButton, submitButton], false);
